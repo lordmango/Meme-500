@@ -5,7 +5,7 @@ import bs58 from 'bs58';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
+ 
 const { RPC_URL, WALLET_PRIVATE_KEY } = process.env;
 
 if (!RPC_URL) throw "Missing RPC_URL in .env file";
