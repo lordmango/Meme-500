@@ -2,7 +2,7 @@ import express from 'express';
 import priceManager from './priceManager.js';
 
 const app = express();
-
+ 
 // Basic route to handle transactions
 app.post('/transaction', (req, res) => {
     const txn = req.body[0];
