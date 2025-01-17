@@ -11,9 +11,11 @@
    "description": "",
    "dependencies": {
       "@solana/web3.js": "^1.98.0",
+      "axios": "^1.7.9",
       "bs58": "^6.0.0",
       "dotenv": "^16.4.7",
       "express": "^4.21.2",
+      "https-proxy-agent": "^7.0.6",
       "node-fetch": "^3.3.2"
    }
 }

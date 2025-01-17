@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import EventEmitter from 'events';
 
 const API_URL = 'https://api.jup.ag/price/v2';
+const SOL_MINT_ADDRESS = 'So11111111111111111111111111111111111111112';
 
 class PriceManager extends EventEmitter {
     constructor() {
@@ -21,30 +22,38 @@ class PriceManager extends EventEmitter {
         }
     }
 
-    // Fetch prices for all monitored tokens
+    // Fetch prices for all monitored tokens and convert to SOL
     async fetchPrices() {
         if (this.monitoredTokens.size === 0) {
-            console.log('[PriceManager] No tokens to monitor.');
             return;
         }
 
         try {
             const tokenIds = Array.from(this.monitoredTokens).join(',');
-            const response = await fetch(`${API_URL}?ids=${tokenIds}`);
+            const response = await fetch(`${API_URL}?ids=${tokenIds},${SOL_MINT_ADDRESS}`);
             const data = await response.json();
+
+            const solPriceInUSD = data.data[SOL_MINT_ADDRESS]?.price;
+
+            if (!solPriceInUSD) {
+                console.error('[PriceManager] Could not fetch SOL price.');
+                return;
+            }
 
             this.monitoredTokens.forEach((tokenId) => {
                 if (data.data && data.data[tokenId]) {
-                    const newPrice = data.data[tokenId].price;
+                    const newPriceInUSD = data.data[tokenId].price;
+                    const newPriceInSOL = newPriceInUSD / solPriceInUSD; // Convert to SOL
+
                     const tokenData = this.tokens.get(tokenId);
                     const oldPrice = tokenData?.livePrice || null;
 
                     // Update the live price
-                    this.tokens.set(tokenId, { ...tokenData, livePrice: newPrice });
+                    this.tokens.set(tokenId, { ...tokenData, livePrice: newPriceInSOL });
 
                     // Emit event if the price changes
-                    if (newPrice !== oldPrice) {
-                        this.emit('priceUpdate', { tokenId, livePrice: newPrice, boughtPrice: tokenData?.boughtPrice });
+                    if (newPriceInSOL !== oldPrice) {
+                        this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice });
                     }
                 }
             });
