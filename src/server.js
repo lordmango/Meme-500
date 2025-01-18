@@ -2,6 +2,7 @@ import express from 'express';
 import priceManager from './priceManager.js';
 import { startSellTokenListener } from './sellToken.js'; // Import SellToken logic
 import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
+import { readFromJson, writeToJson } from './util/data.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const app = express();
@@ -21,13 +22,21 @@ app.post('/transaction', (req, res) => {
    
     if (defiTxn) {
 
+        const existingData = readFromJson(defiTxn.out_token_address);
+        if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
+
         // Add the token to PriceManager with the bought price
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
             const boughtPrice = (defiTxn.sol_change-totalFees) / defiTxn.out_amount;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice);
         }
 
-        // Send a success response
+        writeToJson({
+            tokenId: defiTxn.out_token_address,
+            boughtPrice,
+            timestamp: defiTxn.timestamp,
+        })
+
         return res.status(200).json(defiTxn);
     }
 
@@ -87,6 +96,7 @@ function processTransaction(tx, walletAddress) {
                 sol_change: Math.abs(parseFloat(solChange)),
                 out_token_address: finalChanges.to,
                 out_amount: Math.abs(finalChanges.toAmount),
+                timestamp: new Date(tx.blockTime).getTime() / 1000,
             };
         } else return {}
     }

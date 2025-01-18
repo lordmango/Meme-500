@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 import dotenv from 'dotenv';
+import { writeToJson } from './util/data.js';
 
 dotenv.config();
 
@@ -166,30 +167,44 @@ export function startLimitOrderListener() {
 
     // Condition 1: Price increases by 40%
     if (livePrice >= boughtPrice * 1.4) {
-      if (cachedOrder?.threshold === 1.4) {return}
+      if (cachedOrder?.threshold === 1.4) return;
       console.log(`[LimitOrder] 40% condition met for token ${tokenId}.`);
       await cancelLimitOrder(tokenId);
-      await createLimitOrder({
+      const {order, hash} = await createLimitOrder({
         tokenId,
         outputMint: "So11111111111111111111111111111111111111112",
         makingAmount: boughtPrice,
         takingAmount: livePrice,
         threshold: 1.4,
       });
+
+      writeToJson({
+        tokenId,
+        threshold: 1.4,
+        orderPublicKey: order.publicKey,
+      }, 
+      false)
     }
 
     // Condition 2: Price increases by 90%
     if (livePrice >= boughtPrice * 1.9) {
-      if (cachedOrder?.threshold === 1.9) {return}
+      if (cachedOrder?.threshold === 1.9) return;
       console.log(`[LimitOrder] 90% condition met for token ${tokenId}.`);
       await cancelLimitOrder(tokenId);
-      await createLimitOrder({
+      const {order, hash} = await createLimitOrder({
         tokenId,
         outputMint: "So11111111111111111111111111111111111111112",
         makingAmount: boughtPrice * 0.5,
         takingAmount: livePrice,
         threshold: 1.9,
       });
+
+      writeToJson({
+        tokenId,
+        threshold: 1.9,
+        orderPublicKey: order.publicKey,
+      }, 
+      false)
     }
   });
 
