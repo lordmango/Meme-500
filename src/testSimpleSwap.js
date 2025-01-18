@@ -20,14 +20,14 @@ const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SO
 const OUTPUT_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Example: USDC
 const AMOUNT = 25000000; // Amount in lamports (e.g., 0.05 SOL)
 const SLIPPAGE_BPS = 200; // Slippage in basis points (e.g., 2%)
-const PRIORITY_FEE = 5000000; // Priority fee in lamports: 0.005 SOL
+const PRIORITY_FEE = 5000000; // Priority fee in lamports: 0.01 SOL
 
 // Main function for swapping tokens
 async function swapTokens() {
     try {
         console.log("[Test] Fetching quote for swap...");
         const quoteResponse = await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${INPUT_MINT}&outputMint=${OUTPUT_MINT}&amount=${AMOUNT}&slippageBps=${SLIPPAGE_BPS}`
+            `https://quote-api.jup.ag/v6/quote?inputMint=${INPUT_MINT}&outputMint=${OUTPUT_MINT}&amount=${AMOUNT}&slippageBps=${SLIPPAGE_BPS}&restrictIntermediateTokens=true`
         ).then(res => res.json());
 
         if (!quoteResponse) throw new Error("Failed to fetch quote.");
@@ -40,7 +40,15 @@ async function swapTokens() {
                 quoteResponse,
                 userPublicKey: wallet.publicKey.toString(),
                 wrapAndUnwrapSol: true,
-                prioritizationFeeLamports: PRIORITY_FEE,
+                dynamicComputeUnitLimit: true, // Optimizes CU usage
+                dynamicSlippage: { "minBps": 0, "maxBps": 200 }, // Set slippage for high volatility
+                prioritizationFeeLamports: {
+                    priorityLevelWithMaxLamports: {
+                        maxLamports: PRIORITY_FEE,
+                        global: false, // Local fee market for hot accounts
+                        priorityLevel: "veryHigh" // Prioritize landing the transaction
+                    }
+                }
             }),
         }).then(res => res.json());
 
@@ -53,21 +61,29 @@ async function swapTokens() {
         console.log("[Test] Sending swap transaction...");
         const rawTransaction = transaction.serialize();
 
-        const sendTime = new Date().toISOString(); // Log the timestamp
-        console.log(`[Test] Transaction sent at: ${sendTime}`);
-
-        const txid = await connection.sendRawTransaction(rawTransaction, {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed', // Use a valid commitment level
-            maxRetries: 5,
+        // Use Jupiter's transaction endpoint for broadcasting
+        const response = await fetch('https://worker.jup.ag/send-transaction', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                transaction: rawTransaction.toString('base64') // Base64-encoded transaction
+            }),
         });
 
-        console.log(`[Test] Transaction sent successfully. TXID: ${txid}`);
-        console.log(`[Test] View on Solscan: https://solscan.io/tx/${txid}`);
+        const result = await response.json();
+
+        if (result.txid) {
+            console.log(`[Test] Transaction sent successfully. TXID: ${result.txid}`);
+            console.log(`[Test] View on Solscan: https://solscan.io/tx/${result.txid}`);
+        } else {
+            console.error("[Test] Error during transaction submission:", result);
+        }
     } catch (error) {
         console.error("[Test] Error during transaction execution:", error.message);
 
-        // Retrieve logs if available
         if (error.logs) {
             console.error("[Test] Transaction logs:");
             error.logs.forEach((log) => console.error(log));
