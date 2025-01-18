@@ -29,13 +29,13 @@ app.post('/transaction', (req, res) => {
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
             const boughtPrice = (defiTxn.sol_change-totalFees) / defiTxn.out_amount;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice);
-        }
 
-        writeToJson({
-            tokenId: defiTxn.out_token_address,
-            boughtPrice,
-            timestamp: defiTxn.timestamp,
-        })
+            writeToJson({
+               tokenId: defiTxn.out_token_address,
+               boughtPrice,
+               timestamp: defiTxn.timestamp,
+           })
+        }
 
         return res.status(200).json(defiTxn);
     }
