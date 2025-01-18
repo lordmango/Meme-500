@@ -61,26 +61,15 @@ async function swapTokens() {
         console.log("[Test] Sending swap transaction...");
         const rawTransaction = transaction.serialize();
 
-        // Use Jupiter's transaction endpoint for broadcasting
-        const response = await fetch('https://worker.jup.ag/send-transaction', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                transaction: rawTransaction.toString('base64') // Base64-encoded transaction
-            }),
+        // Revert to using connection.sendRawTransaction
+        const txid = await connection.sendRawTransaction(rawTransaction, {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed', // Use a valid commitment level
+            maxRetries: 5,
         });
 
-        const result = await response.json();
-
-        if (result.txid) {
-            console.log(`[Test] Transaction sent successfully. TXID: ${result.txid}`);
-            console.log(`[Test] View on Solscan: https://solscan.io/tx/${result.txid}`);
-        } else {
-            console.error("[Test] Error during transaction submission:", result);
-        }
+        console.log(`[Test] Transaction sent successfully. TXID: ${txid}`);
+        console.log(`[Test] View on Solscan: https://solscan.io/tx/${txid}`);
     } catch (error) {
         console.error("[Test] Error during transaction execution:", error.message);
 
