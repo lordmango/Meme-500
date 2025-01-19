@@ -2,8 +2,8 @@ import priceManager from '../priceManager.js';
 import { swapToken } from './sellToken.js';
 
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
-const AMOUNT = 25000000; // Amount in lamports (e.g., 0.05 SOL)
-const SELL_PRIORITY_FEE = 5000000; // Priority fee in lamports: 0.01 SOL
+const AMOUNT = 25000000; // Amount in lamports 
+const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
 const SELL_MIN_BPS = 1000; // Min slippage
 const SELL_MAX_BPS = 1000; // Min slippage
 const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
