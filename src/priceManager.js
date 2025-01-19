@@ -22,6 +22,17 @@ class PriceManager extends EventEmitter {
         }
     }
 
+    // Remove a token from the monitored list
+    removeToken(tokenId) {
+      if (this.monitoredTokens.has(tokenId)) {
+          this.monitoredTokens.delete(tokenId);
+          this.tokens.delete(tokenId);
+          console.log(`[PriceManager] Stopped monitoring token: ${tokenId}`);
+      } else {
+          console.log(`[PriceManager] Token ${tokenId} is not being monitored.`);
+      }
+  }
+
     // Fetch prices for all monitored tokens and convert to SOL
     async fetchPrices() {
         if (this.monitoredTokens.size === 0) {

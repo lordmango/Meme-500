@@ -1,6 +1,5 @@
 import express from 'express';
 import priceManager from './priceManager.js';
-import { startSellTokenListener } from './sellToken.js'; // Import SellToken logic
 import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
 import { readFromJson, writeToJson } from './util/data.js';
 
@@ -47,9 +46,6 @@ app.post('/transaction', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-
-    // Start the SellToken Listener
-    startSellTokenListener();
 
     // Start the LimitOrder Listener
     startLimitOrderListener();

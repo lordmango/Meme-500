@@ -21,6 +21,8 @@ const OUTPUT_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Example: 
 const AMOUNT = 25000000; // Amount in lamports (e.g., 0.05 SOL)
 const SLIPPAGE_BPS = 200; // Slippage in basis points (e.g., 2%)
 const PRIORITY_FEE = 5000000; // Priority fee in lamports: 0.01 SOL
+const MIN_BPS = 0; // Min slippage
+const MAX_BPS = 200; // Min slippage
 
 // Main function for swapping tokens
 async function swapTokens() {
@@ -41,7 +43,7 @@ async function swapTokens() {
                 userPublicKey: wallet.publicKey.toString(),
                 wrapAndUnwrapSol: true,
                 dynamicComputeUnitLimit: true, // Optimizes CU usage
-                dynamicSlippage: { "minBps": 0, "maxBps": 200 }, // Set slippage for high volatility
+                dynamicSlippage: { "minBps": MIN_BPS, "maxBps": MAX_BPS }, // Set slippage for high volatility
                 prioritizationFeeLamports: {
                     priorityLevelWithMaxLamports: {
                         maxLamports: PRIORITY_FEE,
