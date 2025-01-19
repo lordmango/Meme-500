@@ -22,7 +22,7 @@ export function startLimitOrderListener() {
 
       // Condition: Price reaches 2x (100% increase)
       if (livePrice >= boughtPrice * 2) {
-         console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice} (2x bought price)`);
+         console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice.toFixed(8)} (100%)`);
          swapToken(INPUT_MINT, tokenId, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
          priceManager.removeToken(tokenId); // Stop tracking the token
          monitoredTokens.delete(tokenId); // Clean up local state
@@ -32,15 +32,16 @@ export function startLimitOrderListener() {
       // limit conditions
       if (livePrice >= boughtPrice * 1.4) {
          currentToken.sellPrice = boughtPrice;
-         console.log(`[LimitOrder] Set sell price for token ${tokenId} at ${boughtPrice.toFixed(8)}`);
+         console.log(`[LimitOrder] Set sell price ${boughtPrice.toFixed(8)} for token ${tokenId} (40%)`);
       } else if (livePrice >= boughtPrice * 1.9) {
          currentToken.sellPrice = boughtPrice * 1.5;
-         console.log(`[LimitOrder] Updated sell price for token ${tokenId} to ${(boughtPrice * 1.5).toFixed(8)}`);
+         console.log(`[LimitOrder] Updated sell price ${(boughtPrice * 1.5).toFixed(8)} for token ${tokenId} (90%)`);
       }
 
       // Sell if the live price hits the sell price
       if (livePrice <= currentToken.sellPrice) {
-         console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice} (sell price reached)`);
+         const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
+         console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
          swapToken(INPUT_MINT, tokenId, AMOUNT, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
          priceManager.removeToken(tokenId); // Stop tracking the token
          monitoredTokens.delete(tokenId); // Clean up local state
