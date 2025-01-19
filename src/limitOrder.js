@@ -1,8 +1,7 @@
-import priceManager from '../priceManager.js';
-import { swapToken } from './sellToken.js';
+import priceManager from './priceManager.js';
+import { swapTokens } from './sellToken.js';
 
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
-const AMOUNT = 25000000; // Amount in lamports 
 const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
 const SELL_MIN_BPS = 1000; // Min slippage
 const SELL_MAX_BPS = 1000; // Min slippage
@@ -12,7 +11,7 @@ export function startLimitOrderListener() {
    const monitoredTokens = new Map();
 
    priceManager.on('priceUpdate', async ({ tokenId, livePrice, boughtPrice, out_amount }) => {
-      console.log(`[LimitOrder] Price update for token ${tokenId}: Live=${livePrice}, Bought=${boughtPrice}`);
+      console.log(`[LimitOrder] Price update for token ${tokenId}: Live=${livePrice}, out_amount=${out_amount}`);
 
       // Initialize the token state if not already set
       if (!monitoredTokens.has(tokenId)) {
@@ -24,7 +23,7 @@ export function startLimitOrderListener() {
       // Condition: Price reaches 2x (100% increase)
       if (livePrice >= boughtPrice * 2) {
          console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice} (2x bought price)`);
-         swapToken(INPUT_MINT, tokenId, AMOUNT, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
+         swapToken(INPUT_MINT, tokenId, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
          priceManager.removeToken(tokenId); // Stop tracking the token
          monitoredTokens.delete(tokenId); // Clean up local state
          return;

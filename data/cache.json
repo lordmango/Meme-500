@@ -1,22 +1,3 @@
 [
-  {
-    "tokenId": "6jTQCFZR8JwvvenVGa3RzGM3a5YEagk9kQXDpHHdpump",
-    "boughtPrice": 0.0000012505030743428612,
-    "timestamp": 1737240.747
-  },
-  {
-    "tokenId": "7M2kvNa2YEdNKzw2pZZqmy2gSwQidZivyR3sSs1Jpump",
-    "boughtPrice": 0.000005408375033973622,
-    "timestamp": 1737241.017
-  },
-  {
-    "tokenId": "8D57qvtW4XbPCMhSSyAg2HyFJEzvTjmLGNHK5wDU2zKS",
-    "boughtPrice": 5.629841684824513e-7,
-    "timestamp": 1737241.16
-  },
-  {
-    "tokenId": "7hGY9j9MQHs9T6P1mxfk4ZyFta25AFB343W9MQnHpump",
-    "boughtPrice": 0.000003855711720712392,
-    "timestamp": 1737241.838
-  }
+
 ]
