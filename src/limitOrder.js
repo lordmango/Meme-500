@@ -11,7 +11,7 @@ export function startLimitOrderListener() {
    const monitoredTokens = new Map();
 
    priceManager.on('priceUpdate', async ({ tokenId, livePrice, boughtPrice, out_amount }) => {
-      console.log(`[LimitOrder] Price update for token ${tokenId}: Live=${livePrice}, out_amount=${out_amount}`);
+      console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
 
       // Initialize the token state if not already set
       if (!monitoredTokens.has(tokenId)) {
@@ -32,10 +32,10 @@ export function startLimitOrderListener() {
       // limit conditions
       if (livePrice >= boughtPrice * 1.4) {
          currentToken.sellPrice = boughtPrice;
-         console.log(`[LimitOrder] Set sell price for token ${tokenId} at ${boughtPrice}`);
+         console.log(`[LimitOrder] Set sell price for token ${tokenId} at ${boughtPrice.toFixed(8)}`);
       } else if (livePrice >= boughtPrice * 1.9) {
          currentToken.sellPrice = boughtPrice * 1.5;
-         console.log(`[LimitOrder] Updated sell price for token ${tokenId} to ${currentToken.sellPrice}`);
+         console.log(`[LimitOrder] Updated sell price for token ${tokenId} to ${(boughtPrice * 1.5).toFixed(8)}`);
       }
 
       // Sell if the live price hits the sell price

@@ -16,9 +16,7 @@ class PriceManager extends EventEmitter {
         if (!this.monitoredTokens.has(tokenId)) {
             this.monitoredTokens.add(tokenId);
             this.tokens.set(tokenId, { livePrice: null, boughtPrice, out_amount }); // Store bought price
-            console.log(`[PriceManager] Now monitoring token: ${tokenId} with bought price: ${boughtPrice}`);
-            // Emit event for new token
-            this.emit('newToken', { tokenId, boughtPrice, out_amount });
+            console.log(`[PriceManager] Monitoring token: ${tokenId} with buy price: ${boughtPrice.toFixed(8)}`);
         }
     }
 
@@ -64,7 +62,7 @@ class PriceManager extends EventEmitter {
 
                     // Emit event if the price changes
                     if (newPriceInSOL !== oldPrice) {
-                        this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice });
+                        this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice, out_amount: tokenData?.out_amount });
                     }
                 }
             });
