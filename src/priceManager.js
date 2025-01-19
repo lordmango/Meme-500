@@ -71,9 +71,25 @@ class PriceManager extends EventEmitter {
         }));
     }
 
-    // Start periodic price fetching
-    startFetchingPrices(interval = 6000) {
-        setInterval(() => this.fetchPrices(), interval);
+    // Start periodic price fetching with handling for variable await durations
+    startFetchingPrices(interval = 1000) {
+        const fetchLoop = async () => {
+            while (true) {
+                const startTime = Date.now(); // Record the start time
+                await this.fetchPrices(); // Await the API call
+                const elapsedTime = Date.now() - startTime; // Calculate elapsed time
+
+                // Calculate the remaining time to wait
+                const waitTime = Math.max(interval - elapsedTime, 0);
+                if (waitTime > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, waitTime));
+                }
+            }
+        };
+
+        fetchLoop().catch((error) => {
+            console.error('[PriceManager] Error in price fetching loop:', error);
+        });
     }
 }
 
