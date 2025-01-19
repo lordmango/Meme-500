@@ -12,13 +12,13 @@ class PriceManager extends EventEmitter {
     }
 
     // Add a token to the monitored list with its bought price
-    addToken(tokenId, boughtPrice) {
+    addToken(tokenId, boughtPrice, out_amount) {
         if (!this.monitoredTokens.has(tokenId)) {
             this.monitoredTokens.add(tokenId);
-            this.tokens.set(tokenId, { livePrice: null, boughtPrice }); // Store bought price
+            this.tokens.set(tokenId, { livePrice: null, boughtPrice, out_amount }); // Store bought price
             console.log(`[PriceManager] Now monitoring token: ${tokenId} with bought price: ${boughtPrice}`);
             // Emit event for new token
-            this.emit('newToken', { tokenId, boughtPrice });
+            this.emit('newToken', { tokenId, boughtPrice, out_amount });
         }
     }
 

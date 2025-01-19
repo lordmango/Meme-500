@@ -11,7 +11,7 @@ const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
 export function startLimitOrderListener() {
    const monitoredTokens = new Map();
 
-   priceManager.on('priceUpdate', async ({ tokenId, livePrice, boughtPrice }) => {
+   priceManager.on('priceUpdate', async ({ tokenId, livePrice, boughtPrice, out_amount }) => {
       console.log(`[LimitOrder] Price update for token ${tokenId}: Live=${livePrice}, Bought=${boughtPrice}`);
 
       // Initialize the token state if not already set
