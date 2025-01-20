@@ -1,6 +1,6 @@
 import express from 'express';
 import priceManager from './priceManager.js';
-import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
+// import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
 import { readFromJson, writeToJson } from './util/data.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
@@ -49,7 +49,8 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 
     // Start the LimitOrder Listener
-    startLimitOrderListener();
+    // startLimitOrderListener();
+    priceManager.startFetchingPrices()
 });
 
 // Helper functions (Unchanged from your current code)

@@ -17,6 +17,7 @@ const wallet = Keypair.fromSecretKey(bs58.decode(WALLET_PRIVATE_KEY));
 
 export async function swapTokens(inputMint, outputMint, amount, priorityFee, minSlippage, maxSlippage, quoteSlippage) {
     try {
+        console.log(inputMint, outputMint, amount)
         console.log("[Test] Fetching quote for swap...");
         const quoteResponse = await fetch(
             `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${quoteSlippage}&restrictIntermediateTokens=true`
@@ -25,6 +26,21 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         if (!quoteResponse) throw new Error("Failed to fetch quote.");
 
         console.log("[Test] Generating swap transaction...");
+        console.log(JSON.stringify({
+            quoteResponse,
+            userPublicKey: wallet.publicKey.toString(),
+            wrapAndUnwrapSol: true,
+            dynamicComputeUnitLimit: true, // Optimizes CU usage
+            dynamicSlippage: { "minBps": minSlippage, "maxBps": maxSlippage }, // Set slippage for high volatility
+            prioritizationFeeLamports: {
+                priorityLevelWithMaxLamports: {
+                    maxLamports: priorityFee,
+                    global: false, // Local fee market for hot accounts
+                    priorityLevel: "veryHigh" // Prioritize landing the transaction
+                }
+            }
+        }))
+        console.log('after stringify')
         const { swapTransaction } = await fetch('https://quote-api.jup.ag/v6/swap', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

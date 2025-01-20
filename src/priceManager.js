@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import EventEmitter from 'events';
+import {priceUpdate} from './limitOrder.js'
 
 const API_URL = 'https://api.jup.ag/price/v2';
 const SOL_MINT_ADDRESS = 'So11111111111111111111111111111111111111112';
@@ -39,8 +40,10 @@ class PriceManager extends EventEmitter {
 
         try {
             const tokenIds = Array.from(this.monitoredTokens).join(',');
+            console.log(`${API_URL}?ids=${tokenIds},${SOL_MINT_ADDRESS}`)
             const response = await fetch(`${API_URL}?ids=${tokenIds},${SOL_MINT_ADDRESS}`);
             const data = await response.json();
+            console.log("Fetched price data")
 
             const solPriceInUSD = data.data[SOL_MINT_ADDRESS]?.price;
 
@@ -49,7 +52,8 @@ class PriceManager extends EventEmitter {
                 return;
             }
 
-            this.monitoredTokens.forEach((tokenId) => {
+            for (const tokenId of this.monitoredTokens) {
+                console.log(data.data[tokenId])
                 if (data.data && data.data[tokenId]) {
                     const newPriceInUSD = data.data[tokenId].price;
                     const newPriceInSOL = newPriceInUSD / solPriceInUSD; // Convert to SOL
@@ -60,12 +64,13 @@ class PriceManager extends EventEmitter {
                     // Update the live price
                     this.tokens.set(tokenId, { ...tokenData, livePrice: newPriceInSOL });
 
+                    await priceUpdate(tokenId, newPriceInSOL, tokenData?.boughtPrice, tokenData?.out_amount)
                     // Emit event if the price changes
-                    if (newPriceInSOL !== oldPrice) {
-                        this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice, out_amount: tokenData?.out_amount });
-                    }
+                    // if (newPriceInSOL !== oldPrice) {
+                    //     this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice, out_amount: tokenData?.out_amount });
+                    // }
                 }
-            });
+            };
         } catch (error) {
             console.error('[PriceManager] Error fetching prices:', error);
         }
@@ -81,7 +86,7 @@ class PriceManager extends EventEmitter {
     }
 
     // Start periodic price fetching with handling for variable await durations
-    startFetchingPrices(interval = 500) {
+    startFetchingPrices(interval = 2000) {
         const fetchLoop = async () => {
             while (true) {
                 const startTime = Date.now(); // Record the start time
@@ -90,6 +95,7 @@ class PriceManager extends EventEmitter {
 
                 // Calculate the remaining time to wait
                 const waitTime = Math.max(interval - elapsedTime, 0);
+
                 if (waitTime > 0) {
                     await new Promise((resolve) => setTimeout(resolve, waitTime));
                 }
