@@ -81,7 +81,7 @@ class PriceManager extends EventEmitter {
     }
 
     // Start periodic price fetching with handling for variable await durations
-    startFetchingPrices(interval = 1000) {
+    startFetchingPrices(interval = 500) {
         const fetchLoop = async () => {
             while (true) {
                 const startTime = Date.now(); // Record the start time
