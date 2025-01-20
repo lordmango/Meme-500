@@ -1,110 +1,101 @@
-import fetch from 'node-fetch';
-import EventEmitter from 'events';
-import {priceUpdate} from './limitOrder.js'
+import puppeteer from 'puppeteer';
+import { priceUpdate } from './limitOrder.js';
 
-const API_URL = 'https://api.jup.ag/price/v2';
-const SOL_MINT_ADDRESS = 'So11111111111111111111111111111111111111112';
-
-class PriceManager extends EventEmitter {
+class PriceManager {
     constructor() {
-        super();
-        this.tokens = new Map(); // Map to store token data: { tokenId: { livePrice, boughtPrice } }
-        this.monitoredTokens = new Set(); // Set to track monitored tokens
+        this.tokens = new Map(); // Map to store token data: { tokenId: { page, livePrice, boughtPrice, out_amount } }
+        this.browser = null; // Puppeteer browser instance
     }
 
-    // Add a token to the monitored list with its bought price
-    addToken(tokenId, boughtPrice, out_amount) {
-        if (!this.monitoredTokens.has(tokenId)) {
-            this.monitoredTokens.add(tokenId);
-            this.tokens.set(tokenId, { livePrice: null, boughtPrice, out_amount }); // Store bought price
-            console.log(`[PriceManager] Monitoring token: ${tokenId} with buy price: ${boughtPrice.toFixed(8)}`);
-        }
-    }
-
-    // Remove a token from the monitored list
-    removeToken(tokenId) {
-      if (this.monitoredTokens.has(tokenId)) {
-          this.monitoredTokens.delete(tokenId);
-          this.tokens.delete(tokenId);
-          console.log(`[PriceManager] Stopped monitoring token: ${tokenId}`);
-      } else {
-          console.log(`[PriceManager] Token ${tokenId} is not being monitored.`);
-      }
-  }
-
-    // Fetch prices for all monitored tokens and convert to SOL
-    async fetchPrices() {
-        if (this.monitoredTokens.size === 0) {
+    // Add a token to the memory and start monitoring its price
+    async addToken(tokenId, boughtPrice, out_amount) {
+        if (this.tokens.has(tokenId)) {
+            console.log(`[PriceManager] Token ${tokenId} is already being monitored.`);
             return;
         }
 
-        try {
-            const tokenIds = Array.from(this.monitoredTokens).join(',');
-            console.log(`${API_URL}?ids=${tokenIds},${SOL_MINT_ADDRESS}`)
-            const response = await fetch(`${API_URL}?ids=${tokenIds},${SOL_MINT_ADDRESS}`);
-            const data = await response.json();
-            console.log("Fetched price data")
+        // Initialize the browser if not already running
+        if (!this.browser) {
+            this.browser = await puppeteer.launch({ headless: false });
+            console.log('[PriceManager] Browser initialized');
+        }
 
-            const solPriceInUSD = data.data[SOL_MINT_ADDRESS]?.price;
+        // Create a new tab for the token
+        const page = await this.browser.newPage();
+        const url = `https://www.defined.fi/sol/${tokenId}`;
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        console.log(`[PriceManager] Monitoring price for token: ${tokenId}`);
 
-            if (!solPriceInUSD) {
-                console.error('[PriceManager] Could not fetch SOL price.');
-                return;
-            }
+        // Store token data in memory
+        this.tokens.set(tokenId, { page, livePrice: null, boughtPrice, out_amount });
 
-            for (const tokenId of this.monitoredTokens) {
-                console.log(data.data[tokenId])
-                if (data.data && data.data[tokenId]) {
-                    const newPriceInUSD = data.data[tokenId].price;
-                    const newPriceInSOL = newPriceInUSD / solPriceInUSD; // Convert to SOL
+        // Start monitoring the price
+        this.monitorPrice(tokenId, page);
+    }
 
-                    const tokenData = this.tokens.get(tokenId);
-                    const oldPrice = tokenData?.livePrice || null;
+    // Stop monitoring a token and close its tab
+    async removeToken(tokenId) {
+        const tokenData = this.tokens.get(tokenId);
 
-                    // Update the live price
-                    this.tokens.set(tokenId, { ...tokenData, livePrice: newPriceInSOL });
+        if (tokenData) {
+            await tokenData.page.close(); // Close the tab
+            this.tokens.delete(tokenId);
+            console.log(`[PriceManager] Stopped monitoring token: ${tokenId}`);
+        } else {
+            console.log(`[PriceManager] Token ${tokenId} is not being monitored.`);
+        }
 
-                    await priceUpdate(tokenId, newPriceInSOL, tokenData?.boughtPrice, tokenData?.out_amount)
-                    // Emit event if the price changes
-                    // if (newPriceInSOL !== oldPrice) {
-                    //     this.emit('priceUpdate', { tokenId, livePrice: newPriceInSOL, boughtPrice: tokenData?.boughtPrice, out_amount: tokenData?.out_amount });
-                    // }
-                }
-            };
-        } catch (error) {
-            console.error('[PriceManager] Error fetching prices:', error);
+        // Close the browser if no tokens are being monitored
+        if (this.tokens.size === 0 && this.browser) {
+            await this.browser.close();
+            this.browser = null;
+            console.log('[PriceManager] Browser closed');
         }
     }
 
-    // Get all token data (live and bought prices)
-    getAllTokenData() {
-        return Array.from(this.tokens.entries()).map(([tokenId, data]) => ({
-            tokenId,
-            livePrice: data.livePrice,
-            boughtPrice: data.boughtPrice,
-        }));
-    }
+    // Monitor the price for a specific token
+    async monitorPrice(tokenId, page) {
+        const fetchPrice = async () => {
+            try {
+                const price = await page.$eval('span[data-sentry-component="FormattedNumber"]', (el) => {
+                    const subElement = el.querySelector('sub');
+                    const spanElements = el.querySelectorAll('span');
 
-    // Start periodic price fetching with handling for variable await durations
-    startFetchingPrices(interval = 2000) {
-        const fetchLoop = async () => {
-            while (true) {
-                const startTime = Date.now(); // Record the start time
-                await this.fetchPrices(); // Await the API call
-                const elapsedTime = Date.now() - startTime; // Calculate elapsed time
+                    if (subElement) {
+                        // Case with <sub>: Extract subscript value and digits
+                        const subscriptValue = parseInt(subElement.textContent.trim(), 10); // Number of leading zeros
+                        const remainingDigits = subElement.nextSibling.textContent.trim(); // Digits after subscript
 
-                // Calculate the remaining time to wait
-                const waitTime = Math.max(interval - elapsedTime, 0);
+                        // Construct the full number
+                        const leadingZeros = '0.'.padEnd(subscriptValue + 2, '0'); // Add leading zeros
+                        return parseFloat(leadingZeros + remainingDigits);
+                    } else {
+                        // Case without <sub>: Extract digits directly
+                        const mainValue = spanElements[1]?.textContent.trim(); // The second <span> holds the price
+                        return parseFloat(mainValue);
+                    }
+                });
 
-                if (waitTime > 0) {
-                    await new Promise((resolve) => setTimeout(resolve, waitTime));
-                }
+                return price;
+            } catch (error) {
+                console.error(`[PriceManager] Error fetching price for ${tokenId}:`, error.message);
+                return null;
             }
         };
 
-        fetchLoop().catch((error) => {
-            console.error('[PriceManager] Error in price fetching loop:', error);
-        });
+        const tokenData = this.tokens.get(tokenId);
+
+        while (this.tokens.has(tokenId)) {
+            const newPrice = await fetchPrice();
+
+            if (newPrice !== null && newPrice !== tokenData.livePrice) {
+                tokenData.livePrice = newPrice; // Update live price in memory
+                await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount); // Notify price change
+                console.log(`[PriceManager] Price updated for ${tokenId}: ${newPrice}`);
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before checking again
+        }
     }
 }
 

@@ -48,9 +48,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 
-    // Start the LimitOrder Listener
-    // startLimitOrderListener();
-    priceManager.startFetchingPrices()
+
 });
 
 // Helper functions (Unchanged from your current code)
