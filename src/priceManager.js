@@ -59,7 +59,7 @@ class PriceManager {
 
         // Initialize the browser if not already running
         if (!this.browser) {
-            this.browser = await puppeteer.launch({ headless: false });
+            this.browser = await puppeteer.launch({ headless: true });
             console.log('[PriceManager] Browser initialized');
         }
 
