@@ -11,7 +11,7 @@ const monitoredTokens = new Map();
 
 export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    
-  // console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
+  console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
 
   // Initialize the token state if not already set
   if (!monitoredTokens.has(tokenId)) {
@@ -21,7 +21,7 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
   const currentToken = monitoredTokens.get(tokenId);
 
   // Condition: Price reaches 2x (100% increase)
-  if (livePrice >= boughtPrice * 1.2) {
+  if (livePrice >= boughtPrice * 1.6) {
      console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice.toFixed(8)} (100%)`);
      swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
      priceManager.removeToken(tokenId); // Stop tracking the token
@@ -31,8 +31,8 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
 
   console.log('sell price: ', currentToken.sellPrice)
 
-  const TP1 = 1.05
-  const TP2 = 1.1
+  const TP1 = 1.20
+  const TP2 = 1.40
 
   // limit conditions
   if (livePrice >= boughtPrice * TP2) {

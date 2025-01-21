@@ -35,7 +35,7 @@ const fetchPrice = async (page, tokenId) => {
         });
         if (!parseFloat(tokenPrice) || !parseFloat(solPrice)) return null;
         const tokenPriceInSol = parseFloat(tokenPrice) / parseFloat(solPrice)
-        console.log(`${tokenId} : ${tokenPriceInSol}`)
+      //   console.log(`${tokenId} : ${tokenPriceInSol}`)
 
         return tokenPriceInSol;
     } catch (error) {
@@ -59,7 +59,7 @@ class PriceManager {
 
         // Initialize the browser if not already running
         if (!this.browser) {
-            this.browser = await puppeteer.launch({ headless: true });
+            this.browser = await puppeteer.launch({ headless: false });
             console.log('[PriceManager] Browser initialized');
         }
 
@@ -108,10 +108,10 @@ class PriceManager {
             if (newPrice !== null && newPrice !== tokenData.livePrice) {
                 tokenData.livePrice = newPrice; // Update live price in memory
                 await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount); // Notify price change
-                console.log(`[PriceManager] Price updated for ${tokenId}: ${newPrice}`);
+               //  console.log(`[PriceManager] Price updated for ${tokenId}: ${newPrice}`);
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before checking again
+            await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 1 second before checking again
         }
     }
 }

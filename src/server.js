@@ -5,7 +5,7 @@ import { readFromJson, writeToJson } from './util/data.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const app = express();
-const totalFees = .00404
+const totalFees = .004
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -38,12 +38,12 @@ app.post('/transaction', (req, res) => {
             const boughtPrice = (defiTxn.sol_change-totalFees) / defiTxn.out_amount;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
-        //     writeToJson({
-        //        tokenId: defiTxn.out_token_address,
-        //        boughtPrice,
-        //        timestamp: defiTxn.timestamp,
-        //        outAmount: defiTxn.out_amount
-        //    })
+            writeToJson({
+               tokenId: defiTxn.out_token_address,
+               boughtPrice,
+               timestamp: defiTxn.timestamp,
+               outAmount: defiTxn.out_amount
+           })
         }
 
         return res.status(200).json(defiTxn);
