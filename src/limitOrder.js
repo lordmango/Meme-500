@@ -7,68 +7,71 @@ const SELL_MIN_BPS = 1000; // Min slippage
 const SELL_MAX_BPS = 1000; // Min slippage
 const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
 
-const TP1 = 1.30;
-const TP2 = 1.70;
-const TP3 = 1.9;
-
-const SL1 = 1;
-const SL2 = 1.25;
-const SL3 = 1.5;
-
-let tp1Triggered = false;
-let tp2Triggered = false;
-let tp3Triggered = false;
-
 const monitoredTokens = new Map();
+const triggeredThresholds = new Map(); // Store triggered thresholds per token
+
+const thresholds = [
+   { tp: 1.3, sellPrice: 1.0 },        // 30% = 1.3 * boughtPrice, sellPrice = 1.0 * boughtPrice
+   { tp: 1.5, sellPrice: 1.2 },        // 50% = 1.5 * boughtPrice, sellPrice = 1.2 * boughtPrice
+   { tp: 1.75, sellPrice: 1.3 },       // 75% = 1.75 * boughtPrice, sellPrice = 1.3 * boughtPrice
+   { tp: 2.0, sellPrice: 1.5 },        // 100% = 2.0 * boughtPrice, sellPrice = 1.5 * boughtPrice
+   { tp: 2.14, sellPrice: 1.64 },      // 114% = 2.14 * boughtPrice, sellPrice = 1.64 * boughtPrice
+   { tp: 2.78, sellPrice: 1.28 },      // 178% = 2.78 * boughtPrice, sellPrice = 1.28 * boughtPrice
+   { tp: 3.42, sellPrice: 1.92 },      // 242% = 3.42 * boughtPrice, sellPrice = 1.92 * boughtPrice
+   { tp: 4.06, sellPrice: 2.56 },      // 306% = 4.06 * boughtPrice, sellPrice = 2.56 * boughtPrice
+   { tp: 4.71, sellPrice: 3.21 },      // 371% = 4.71 * boughtPrice, sellPrice = 3.21 * boughtPrice
+   { tp: 5.36, sellPrice: 3.86 },      // 436% = 5.36 * boughtPrice, sellPrice = 3.86 * boughtPrice
+   { tp: 6.0, sellPrice: 4.5 },        // 500% = 6.0 * boughtPrice, sellPrice = 4.5 * boughtPrice
+   { tp: 8.0, sellPrice: 5.5 },        // 700% = 8.0 * boughtPrice, sellPrice = 5.5 * boughtPrice
+   { tp: 10.0, sellPrice: 7.5 },       // 900% = 10.0 * boughtPrice, sellPrice = 7.5 * boughtPrice
+   { tp: 12.0, sellPrice: 9.5 },       // 1100% = 12.0 * boughtPrice, sellPrice = 9.5 * boughtPrice
+   { tp: 14.0, sellPrice: 11.5 },      // 1300% = 14.0 * boughtPrice, sellPrice = 11.5 * boughtPrice
+   { tp: 16.0, sellPrice: 13.5 },      // 1500% = 16.0 * boughtPrice, sellPrice = 13.5 * boughtPrice
+   { tp: 18.0, sellPrice: 15.5 },      // 1700% = 18.0 * boughtPrice, sellPrice = 15.5 * boughtPrice
+   { tp: 19.0, sellPrice: 17.5 }       // 1900% = 19.0 * boughtPrice, sellPrice = 17.5 * boughtPrice
+];
 
 export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
-   
-  console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
+   console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
 
-  // Initialize the token state if not already set
-  if (!monitoredTokens.has(tokenId)) {
-     monitoredTokens.set(tokenId, { sellPrice: 0 });
-  }
+   // Initialize the token state if not already set
+   if (!monitoredTokens.has(tokenId)) {
+      monitoredTokens.set(tokenId, { sellPrice: 0 });
+      triggeredThresholds.set(tokenId, new Set()); // Initialize triggered thresholds for this token
+   }
 
-  const currentToken = monitoredTokens.get(tokenId);
+   const currentToken = monitoredTokens.get(tokenId);
+   const tokenTriggeredThresholds = triggeredThresholds.get(tokenId);
 
-  // Condition: Price reaches 2x (100% increase)
-  if (livePrice >= boughtPrice * 2.1) {
-     console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice.toFixed(8)} (100%)`);
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
-     priceManager.removeToken(tokenId); // Stop tracking the token
-     monitoredTokens.delete(tokenId); // Clean up local state
-     return;
-  }
+   console.log('Sell price:', currentToken.sellPrice);
 
-  console.log('sell price: ', currentToken.sellPrice)
-  
-  // limit conditions
-  if (!tp3Triggered && livePrice >= boughtPrice * TP3) {
-    currentToken.sellPrice = boughtPrice * SL3;
-    tp3Triggered = true;
-    console.log(`[LimitOrder] Updated sell price ${(boughtPrice * SL2).toFixed(8)} for token ${tokenId} (150%)`);
-  } else if (!tp2Triggered && livePrice >= boughtPrice * TP2) {
-    currentToken.sellPrice = boughtPrice * SL2;
-    tp2Triggered = true;
-    console.log(`[LimitOrder] Updated sell price ${(boughtPrice * SL1).toFixed(8)} for token ${tokenId} (125%)`);
-  } else if (!tp1Triggered && livePrice >= boughtPrice * TP1) {
-    currentToken.sellPrice = boughtPrice * SL1;
-    tp1Triggered = true;
-    console.log(`[LimitOrder] Set sell price ${boughtPrice.toFixed(8)} for token ${tokenId} (100%)`);
-  }
-  
-  // Sell if the live price hits the sell price
-  if (livePrice <= currentToken.sellPrice) {
-     const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
-     console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
-     await swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
-     priceManager.removeToken(tokenId); // Stop tracking the token
-     monitoredTokens.delete(tokenId); // Clean up local state
-     return;
-  }
+   // Process thresholds
+   for (const { tp, sellPrice } of thresholds) {
+      const triggerCondition = boughtPrice * tp;
+
+      if (livePrice >= triggerCondition && !tokenTriggeredThresholds.has(tp)) {
+         tokenTriggeredThresholds.add(tp);
+
+         currentToken.sellPrice = boughtPrice * sellPrice;
+
+         console.log(
+            `[LimitOrder] Sell price updated to ${currentToken.sellPrice.toFixed(
+               8
+            )} for token ${tokenId} at ${(tp * 100 - 100).toFixed(2)}% threshold`
+         );
+
+         break; // Only trigger one condition per price update
+      }
+   }
+
+   // Sell if the live price hits the sell price
+   if (livePrice <= currentToken.sellPrice && currentToken.sellPrice > 0) {
+      const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
+      console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
+      swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+      priceManager.removeToken(tokenId); // Stop tracking the token
+      monitoredTokens.delete(tokenId); // Clean up local state
+      triggeredThresholds.delete(tokenId); // Clean up thresholds
+      return;
+   }
 }
