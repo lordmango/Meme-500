@@ -12,6 +12,15 @@ app.use(express.json());
 
 // Basic route to handle transactions
 app.post('/transaction', (req, res) => {
+    // const token = req.body.token;
+
+    // const defiTxn = {
+    //     sol_change: 1,
+    //     out_token_address: token,
+    //     out_amount: 100000,
+    //     timestamp: 1673445
+    //   }
+
     const txn = req.body[0];
 
     const walletAddress = txn.transaction.message.accountKeys[0];
@@ -29,12 +38,12 @@ app.post('/transaction', (req, res) => {
             const boughtPrice = (defiTxn.sol_change-totalFees) / defiTxn.out_amount;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
-            writeToJson({
-               tokenId: defiTxn.out_token_address,
-               boughtPrice,
-               timestamp: defiTxn.timestamp,
-               outAmount: defiTxn.out_amount
-           })
+        //     writeToJson({
+        //        tokenId: defiTxn.out_token_address,
+        //        boughtPrice,
+        //        timestamp: defiTxn.timestamp,
+        //        outAmount: defiTxn.out_amount
+        //    })
         }
 
         return res.status(200).json(defiTxn);

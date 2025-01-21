@@ -20,7 +20,7 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         console.log(inputMint, outputMint, amount)
         console.log("[Test] Fetching quote for swap...");
         const quoteResponse = await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${quoteSlippage}&restrictIntermediateTokens=true`
+            `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${Math.floor(amount * 1e6)}&slippageBps=${quoteSlippage}&restrictIntermediateTokens=true`
         ).then(res => res.json());
 
         if (!quoteResponse) throw new Error("Failed to fetch quote.");

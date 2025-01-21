@@ -59,5 +59,5 @@ async function fetchAndMonitorPrice(tokenId) {
 }
 
 // Replace with a token ID to test
-const tokenId = 'B5QC9tEVRzK4k7k6vU5YaVeKwmPnToHE6F4Fr8fspump';
+const tokenId = '61nfNMVnnEfrL5AucutFq8aDtFQKABioBEo5XrvCpump';
 fetchAndMonitorPrice(tokenId);

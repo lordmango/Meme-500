@@ -11,7 +11,7 @@ const monitoredTokens = new Map();
 
 export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    
-  console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
+  // console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
 
   // Initialize the token state if not already set
   if (!monitoredTokens.has(tokenId)) {
@@ -21,28 +21,33 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
   const currentToken = monitoredTokens.get(tokenId);
 
   // Condition: Price reaches 2x (100% increase)
-  if (livePrice >= boughtPrice * 1.6) {
+  if (livePrice >= boughtPrice * 1.2) {
      console.log(`[LimitOrder] Selling token ${tokenId} at ${livePrice.toFixed(8)} (100%)`);
-     swapTokens(INPUT_MINT, tokenId, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
+     swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE); // sell
      priceManager.removeToken(tokenId); // Stop tracking the token
      monitoredTokens.delete(tokenId); // Clean up local state
      return;
   }
 
+  console.log('sell price: ', currentToken.sellPrice)
+
+  const TP1 = 1.05
+  const TP2 = 1.1
+
   // limit conditions
-  if (livePrice >= boughtPrice * 1.2) {
-     currentToken.sellPrice = boughtPrice;
-     console.log(`[LimitOrder] Set sell price ${boughtPrice.toFixed(8)} for token ${tokenId} (40%)`);
-  } else if (livePrice >= boughtPrice * 1.4) {
-     currentToken.sellPrice = boughtPrice * 1.2;
-     console.log(`[LimitOrder] Updated sell price ${(boughtPrice * 1.2).toFixed(8)} for token ${tokenId} (90%)`);
+  if (livePrice >= boughtPrice * TP2) {
+    currentToken.sellPrice = boughtPrice * TP1;
+    console.log(`[LimitOrder] Updated sell price ${(boughtPrice * TP1).toFixed(8)} for token ${tokenId} (90%)`);
+ } else if (livePrice >= boughtPrice * TP1) {
+    if (currentToken.sellPrice !== boughtPrice * TP1) currentToken.sellPrice = boughtPrice;
+    console.log(`[LimitOrder] Set sell price ${boughtPrice.toFixed(8)} for token ${tokenId} (40%)`);
   }
 
   // Sell if the live price hits the sell price
   if (livePrice <= currentToken.sellPrice) {
      const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
      console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
-     swapTokens(INPUT_MINT, tokenId, AMOUNT, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+     swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
      priceManager.removeToken(tokenId); // Stop tracking the token
      monitoredTokens.delete(tokenId); // Clean up local state
      return;
