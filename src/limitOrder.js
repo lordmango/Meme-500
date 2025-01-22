@@ -2,17 +2,16 @@ import priceManager from './priceManager.js';
 import { swapTokens } from './sellToken.js';
 
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
-const SELL_PRIORITY_FEE = 3000000; // Priority fee in lamports
+const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
 const SELL_MIN_BPS = 1500; // Min slippage
 const SELL_MAX_BPS = 1500; // Min slippage
-const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
+const QUOTE_SLIPPAGE = 1200; // Slippage when we send quote
 
 const monitoredTokens = new Map();
 const triggeredThresholds = new Map(); // Store triggered thresholds per token
 
 const thresholds = [
-   { tp: 1.3, sellPrice: 1.0 },        // 30% = 1.3 * boughtPrice, sellPrice = 1.0 * boughtPrice
-   { tp: 1.5, sellPrice: 1.2 },        // 50% = 1.5 * boughtPrice, sellPrice = 1.2 * boughtPrice
+   { tp: 1.5, sellPrice: 1.0 },        // 50% = 1.5 * boughtPrice, sellPrice = 1.0 * boughtPrice
    { tp: 1.75, sellPrice: 1.3 },       // 75% = 1.75 * boughtPrice, sellPrice = 1.3 * boughtPrice
    { tp: 2.0, sellPrice: 1.5 },        // 100% = 2.0 * boughtPrice, sellPrice = 1.5 * boughtPrice
    { tp: 2.14, sellPrice: 1.64 },      // 114% = 2.14 * boughtPrice, sellPrice = 1.64 * boughtPrice
@@ -68,6 +67,8 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    if (livePrice <= currentToken.sellPrice && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
+      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       priceManager.removeToken(tokenId); // Stop tracking the token
       monitoredTokens.delete(tokenId); // Clean up local state
