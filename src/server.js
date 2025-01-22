@@ -11,13 +11,13 @@ const totalFees = .004
 app.use(express.json());
 
 // Basic route to handle transactions
-app.post('/transaction', (req, res) => {
+app.post('/transaction', async (req, res) => {
     // const token = req.body.token;
 
     // const defiTxn = {
     //     sol_change: 1,
     //     out_token_address: token,
-    //     out_amount: 100000,
+    //     out_amount: 525000,
     //     timestamp: 1673445
     //   }
 
@@ -35,7 +35,8 @@ app.post('/transaction', (req, res) => {
 
         // Add the token to PriceManager with the bought price
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
-            const boughtPrice = (defiTxn.sol_change-totalFees) / defiTxn.out_amount;
+            const solPrice = await getPriceData();
+            const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
             writeToJson({
@@ -170,3 +171,26 @@ function calculateBalanceChanges(preBalances, postBalances) {
 
     return changes;
 }
+
+async function getPriceData() {
+    try {
+      const res = await fetch("https://hermes.pyth.network/v2/updates/price/latest?ids%5B%5D=0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43&ids%5B%5D=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace&ids%5B%5D=0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        next: {
+          revalidate: 5
+        }
+      })
+  
+      const data = await res.json();
+      const solPrice = data.parsed[2].price.price / 10 ** 8;
+  
+      return solPrice;
+    } catch (error) {
+      console.error(error)
+      return 0;
+    }
+  }
+  

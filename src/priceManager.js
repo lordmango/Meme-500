@@ -3,41 +3,24 @@ import { priceUpdate } from './limitOrder.js';
 
 const fetchPrice = async (page, tokenId) => {
     try {
-        await page.waitForSelector('span[data-sentry-component="FormattedNumber"]', { timeout: 10000 });
-        const tokenPrice = await page.$eval('span[data-sentry-component="FormattedNumber"]', (el) => {
-            const subElement = el.querySelector('sub');
-            const spanElements = el.querySelectorAll('span');
+        await page.waitForSelector('div.color-text-1.text-16px', { timeout: 10000 });
+        const priceText = await page.$eval('div.color-text-1.text-16px', (el) => el.textContent.trim());
+        const tokenPrice = parseFloat(priceText.replace('$', ''));
 
-            if (subElement) {
-                // Case with <sub>: Extract subscript value and digits
-                const subscriptValue = parseInt(subElement.textContent.trim(), 10); // Number of leading zeros
-                const remainingDigits = subElement.nextSibling.textContent.trim(); // Digits after subscript
+        // await page.waitForSelector('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', { timeout: 10000 });
+        // const solPrice = await page.$eval('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', (el) => {
+        //     // const spanElements = el.querySelectorAll('span');
 
-                // Construct the full number
-                const leadingZeros = '0.'.padEnd(subscriptValue + 2, '0'); // Add leading zeros
-                return parseFloat(leadingZeros + remainingDigits);
-            } else {
-                // Case without <sub>: Extract digits directly
-                const mainValue = spanElements[1]?.textContent.trim(); // The second <span> holds the price
-                return parseFloat(mainValue);
-            }
-        });
-
-
-        await page.waitForSelector('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', { timeout: 10000 });
-        const solPrice = await page.$eval('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', (el) => {
-            // const spanElements = el.querySelectorAll('span');
-
-            // // Case without <sub>: Extract digits directly
-            // const mainValue = spanElements[1]?.textContent.trim(); // The second <span> holds the price
-            // return parseFloat(mainValue);
-            return parseFloat(el.textContent.trim())
-        });
-        if (!parseFloat(tokenPrice) || !parseFloat(solPrice)) return null;
-        const tokenPriceInSol = parseFloat(tokenPrice) / parseFloat(solPrice)
+        //     // // Case without <sub>: Extract digits directly
+        //     // const mainValue = spanElements[1]?.textContent.trim(); // The second <span> holds the price
+        //     // return parseFloat(mainValue);
+        //     return parseFloat(el.textContent.trim())
+        // });
+        if (!tokenPrice) return null;
+        // const tokenPriceInSol = parseFloat(tokenPrice) / parseFloat(solPrice)
       //   console.log(`${tokenId} : ${tokenPriceInSol}`)
 
-        return tokenPriceInSol;
+        return tokenPrice;
     } catch (error) {
         console.error(`[PriceManager] Error fetching price for ${tokenId}:`, error.message);
         return null;
@@ -59,13 +42,13 @@ class PriceManager {
 
         // Initialize the browser if not already running
         if (!this.browser) {
-            this.browser = await puppeteer.launch({ headless: true });
+            this.browser = await puppeteer.launch({ headless: false });
             console.log('[PriceManager] Browser initialized');
         }
 
         // Create a new tab for the token
         const page = await this.browser.newPage();
-        const url = `https://www.defined.fi/sol/${tokenId}`;
+        const url = `https://ave.ai/token/${tokenId}-solana?from=Token`;
         await page.setViewport({width: 1080, height: 1000})
         await page.goto(url, { waitUntil: 'domcontentloaded' });
         console.log(`[PriceManager] Monitoring price for token: ${tokenId}`);
