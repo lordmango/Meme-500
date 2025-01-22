@@ -1,3 +1,14 @@
 [
-
+  {
+    "tokenId": "PnXkD6aZcFmMByec4JKkckhhaovdYD5WZjEAzPdpump",
+    "boughtPrice": 0.0001675256325994021,
+    "timestamp": 1737511.041,
+    "outAmount": 18277.268
+  },
+  {
+    "tokenId": "aK7pd4yQ1MBmJuVaotHnwNuQopWsf47VAEsBWSdpump",
+    "boughtPrice": 0.0003861733097624649,
+    "timestamp": 1737511.403,
+    "outAmount": 7890.5195
+  }
 ]

@@ -2,25 +2,29 @@ import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
 
 const fetchPrice = async (page, tokenId) => {
-    try {
-        await page.waitForSelector('div.color-text-1.text-16px', { timeout: 10000 });
-        const priceText = await page.$eval('div.color-text-1.text-16px', (el) => el.textContent.trim());
-        const tokenPrice = parseFloat(priceText.replace('$', ''));
+   try {
+      // Wait for the element to appear on the page
+      await page.waitForSelector('div.color-text-1.text-16px', { timeout: 10000 });
 
-        // await page.waitForSelector('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', { timeout: 10000 });
-        // const solPrice = await page.$eval('span.MuiTypography-root.MuiTypography-caption.css-xpsis6 span:last-child', (el) => {
-        //     // const spanElements = el.querySelectorAll('span');
+      // Extract the price value
+      const priceText = await page.$eval('div.color-text-1.text-16px', (el) => el.textContent.trim());
 
-        //     // // Case without <sub>: Extract digits directly
-        //     // const mainValue = spanElements[1]?.textContent.trim(); // The second <span> holds the price
-        //     // return parseFloat(mainValue);
-        //     return parseFloat(el.textContent.trim())
-        // });
-        if (!tokenPrice) return null;
-        // const tokenPriceInSol = parseFloat(tokenPrice) / parseFloat(solPrice)
-      //   console.log(`${tokenId} : ${tokenPriceInSol}`)
+      // Check if the price contains a subscript notation (e.g., {4})
+      const subscriptMatch = priceText.match(/\{(\d+)\}/);
+      if (subscriptMatch) {
+          const subscriptValue = parseInt(subscriptMatch[1], 10); // Extract the subscript value
+          const remainingDigits = priceText.replace(/\$\d+\.\{(\d+)\}/, ''); // Extract remaining digits
+          const leadingZeros = '0.'.padEnd(subscriptValue + 2, '0'); // Create the leading zeros
+          const tokenPrice = parseFloat(leadingZeros + remainingDigits);
 
-        return tokenPrice;
+          return tokenPrice;
+      } else {
+          // Handle regular price format
+          const tokenPrice = parseFloat(priceText.replace('$', ''));
+          if (!tokenPrice) return null;
+
+          return tokenPrice;
+      }
     } catch (error) {
         console.error(`[PriceManager] Error fetching price for ${tokenId}:`, error.message);
         return null;
