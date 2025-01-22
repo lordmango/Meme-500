@@ -69,11 +69,10 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         console.log("[Test] Sending swap transaction...");
         const rawTransaction = transaction.serialize();
 
-        // Revert to using connection.sendRawTransaction
         const txid = await connection.sendRawTransaction(rawTransaction, {
             skipPreflight: false,
             preflightCommitment: 'confirmed', // Use a valid commitment level
-            maxRetries: 5,
+            maxRetries: 3,
         });
 
         console.log(`[Test] Transaction sent successfully. TXID: ${txid}`);

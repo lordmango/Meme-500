@@ -2,9 +2,9 @@ import priceManager from './priceManager.js';
 import { swapTokens } from './sellToken.js';
 
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
-const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
-const SELL_MIN_BPS = 1000; // Min slippage
-const SELL_MAX_BPS = 1000; // Min slippage
+const SELL_PRIORITY_FEE = 3000000; // Priority fee in lamports
+const SELL_MIN_BPS = 1500; // Min slippage
+const SELL_MAX_BPS = 1500; // Min slippage
 const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
 
 const monitoredTokens = new Map();
@@ -16,19 +16,19 @@ const thresholds = [
    { tp: 1.75, sellPrice: 1.3 },       // 75% = 1.75 * boughtPrice, sellPrice = 1.3 * boughtPrice
    { tp: 2.0, sellPrice: 1.5 },        // 100% = 2.0 * boughtPrice, sellPrice = 1.5 * boughtPrice
    { tp: 2.14, sellPrice: 1.64 },      // 114% = 2.14 * boughtPrice, sellPrice = 1.64 * boughtPrice
-   { tp: 2.78, sellPrice: 1.28 },      // 178% = 2.78 * boughtPrice, sellPrice = 1.28 * boughtPrice
-   { tp: 3.42, sellPrice: 1.92 },      // 242% = 3.42 * boughtPrice, sellPrice = 1.92 * boughtPrice
-   { tp: 4.06, sellPrice: 2.56 },      // 306% = 4.06 * boughtPrice, sellPrice = 2.56 * boughtPrice
-   { tp: 4.71, sellPrice: 3.21 },      // 371% = 4.71 * boughtPrice, sellPrice = 3.21 * boughtPrice
-   { tp: 5.36, sellPrice: 3.86 },      // 436% = 5.36 * boughtPrice, sellPrice = 3.86 * boughtPrice
-   { tp: 6.0, sellPrice: 4.5 },        // 500% = 6.0 * boughtPrice, sellPrice = 4.5 * boughtPrice
-   { tp: 8.0, sellPrice: 5.5 },        // 700% = 8.0 * boughtPrice, sellPrice = 5.5 * boughtPrice
-   { tp: 10.0, sellPrice: 7.5 },       // 900% = 10.0 * boughtPrice, sellPrice = 7.5 * boughtPrice
-   { tp: 12.0, sellPrice: 9.5 },       // 1100% = 12.0 * boughtPrice, sellPrice = 9.5 * boughtPrice
-   { tp: 14.0, sellPrice: 11.5 },      // 1300% = 14.0 * boughtPrice, sellPrice = 11.5 * boughtPrice
-   { tp: 16.0, sellPrice: 13.5 },      // 1500% = 16.0 * boughtPrice, sellPrice = 13.5 * boughtPrice
-   { tp: 18.0, sellPrice: 15.5 },      // 1700% = 18.0 * boughtPrice, sellPrice = 15.5 * boughtPrice
-   { tp: 19.0, sellPrice: 17.5 }       // 1900% = 19.0 * boughtPrice, sellPrice = 17.5 * boughtPrice
+   { tp: 2.78, sellPrice: 2.28 },      // 178% = 2.78 * boughtPrice, sellPrice = 1.28 * boughtPrice
+   { tp: 3.42, sellPrice: 2.92 },      // 242% = 3.42 * boughtPrice, sellPrice = 1.92 * boughtPrice
+   { tp: 4.06, sellPrice: 3.56 },      // 306% = 4.06 * boughtPrice, sellPrice = 2.56 * boughtPrice
+   { tp: 4.71, sellPrice: 4.21 },      // 371% = 4.71 * boughtPrice, sellPrice = 3.21 * boughtPrice
+   { tp: 5.36, sellPrice: 4.86 },      // 436% = 5.36 * boughtPrice, sellPrice = 3.86 * boughtPrice
+   { tp: 6.0, sellPrice: 5.5 },        // 500% = 6.0 * boughtPrice, sellPrice = 4.5 * boughtPrice
+   { tp: 8.0, sellPrice: 6.5 },        // 700% = 8.0 * boughtPrice, sellPrice = 5.5 * boughtPrice
+   { tp: 10.0, sellPrice: 8.5 },       // 900% = 10.0 * boughtPrice, sellPrice = 7.5 * boughtPrice
+   { tp: 12.0, sellPrice: 10.5 },       // 1100% = 12.0 * boughtPrice, sellPrice = 9.5 * boughtPrice
+   { tp: 14.0, sellPrice: 12.5 },      // 1300% = 14.0 * boughtPrice, sellPrice = 11.5 * boughtPrice
+   { tp: 16.0, sellPrice: 14.5 },      // 1500% = 16.0 * boughtPrice, sellPrice = 13.5 * boughtPrice
+   { tp: 18.0, sellPrice: 16.5 },      // 1700% = 18.0 * boughtPrice, sellPrice = 15.5 * boughtPrice
+   { tp: 20.0, sellPrice: 18.5 }       // 1900% = 19.0 * boughtPrice, sellPrice = 17.5 * boughtPrice
 ];
 
 export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
@@ -68,7 +68,7 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    if (livePrice <= currentToken.sellPrice && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
-      swapTokens(tokenId, INPUT_MINT, out_amount, SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       priceManager.removeToken(tokenId); // Stop tracking the token
       monitoredTokens.delete(tokenId); // Clean up local state
       triggeredThresholds.delete(tokenId); // Clean up thresholds

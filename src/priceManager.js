@@ -1,5 +1,13 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
+import { swapTokens } from './sellToken.js';
+
+let counter = 0;
+const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
+const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
+const SELL_MIN_BPS = 1000; // Min slippage
+const SELL_MAX_BPS = 1000; // Min slippage
+const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
 
 const fetchPrice = async (page, tokenId) => {
    try {
@@ -9,20 +17,24 @@ const fetchPrice = async (page, tokenId) => {
       // Extract the price value
       const priceText = await page.$eval('div.color-text-1.text-16px', (el) => el.textContent.trim());
 
-      // Check if the price contains a subscript notation (e.g., {4})
-      const subscriptMatch = priceText.match(/\{(\d+)\}/);
+      // Check if the price contains a subscript notation (e.g., $0.0{4}6556)
+      const subscriptMatch = priceText.match(/\{(\d+)\}(\d+)/);
       if (subscriptMatch) {
-          const subscriptValue = parseInt(subscriptMatch[1], 10); // Extract the subscript value
-          const remainingDigits = priceText.replace(/\$\d+\.\{(\d+)\}/, ''); // Extract remaining digits
-          const leadingZeros = '0.'.padEnd(subscriptValue + 2, '0'); // Create the leading zeros
+          const subscriptValue = parseInt(subscriptMatch[1], 10); // Extract the subscript value (e.g., 4)
+          const remainingDigits = subscriptMatch[2]; // Extract the digits after the subscript (e.g., 6556)
+
+          // Create the correct decimal representation
+          const leadingZeros = '0.'.padEnd(subscriptValue + 2, '0'); // Add leading zeros
           const tokenPrice = parseFloat(leadingZeros + remainingDigits);
 
+         //  console.log(`Fetched Price with subscript: ${tokenPrice}`);
           return tokenPrice;
       } else {
           // Handle regular price format
           const tokenPrice = parseFloat(priceText.replace('$', ''));
           if (!tokenPrice) return null;
 
+         //  console.log(`Fetched Price: ${tokenPrice}`);
           return tokenPrice;
       }
     } catch (error) {
