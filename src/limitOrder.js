@@ -4,30 +4,27 @@ import { swapTokens } from './sellToken.js';
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
 const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
 const SELL_MIN_BPS = 1000; // Min slippage
-const SELL_MAX_BPS = 1500; // Min slippage
+const SELL_MAX_BPS = 1500; // Max slippage
 const QUOTE_SLIPPAGE = 1500; // Slippage when we send quote
 
 const monitoredTokens = new Map();
 const triggeredThresholds = new Map(); // Store triggered thresholds per token
 
 const thresholds = [
-   { tp: 1.45, sellPrice: 1.0 },        // 50% = 1.5 * boughtPrice, sellPrice = 1.0 * boughtPrice
-   { tp: 1.75, sellPrice: 1.3 },       // 75% = 1.75 * boughtPrice, sellPrice = 1.3 * boughtPrice
-   { tp: 2.0, sellPrice: 1.5 },        // 100% = 2.0 * boughtPrice, sellPrice = 1.5 * boughtPrice
-   { tp: 2.14, sellPrice: 1.64 },      // 114% = 2.14 * boughtPrice, sellPrice = 1.64 * boughtPrice
-   { tp: 2.78, sellPrice: 2.28 },      // 178% = 2.78 * boughtPrice, sellPrice = 1.28 * boughtPrice
-   { tp: 3.42, sellPrice: 2.92 },      // 242% = 3.42 * boughtPrice, sellPrice = 1.92 * boughtPrice
-   { tp: 4.06, sellPrice: 3.56 },      // 306% = 4.06 * boughtPrice, sellPrice = 2.56 * boughtPrice
-   { tp: 4.71, sellPrice: 4.21 },      // 371% = 4.71 * boughtPrice, sellPrice = 3.21 * boughtPrice
-   { tp: 5.36, sellPrice: 4.86 },      // 436% = 5.36 * boughtPrice, sellPrice = 3.86 * boughtPrice
-   { tp: 6.0, sellPrice: 5.5 },        // 500% = 6.0 * boughtPrice, sellPrice = 4.5 * boughtPrice
-   { tp: 8.0, sellPrice: 6.5 },        // 700% = 8.0 * boughtPrice, sellPrice = 5.5 * boughtPrice
-   { tp: 10.0, sellPrice: 8.5 },       // 900% = 10.0 * boughtPrice, sellPrice = 7.5 * boughtPrice
-   { tp: 12.0, sellPrice: 10.5 },       // 1100% = 12.0 * boughtPrice, sellPrice = 9.5 * boughtPrice
-   { tp: 14.0, sellPrice: 12.5 },      // 1300% = 14.0 * boughtPrice, sellPrice = 11.5 * boughtPrice
-   { tp: 16.0, sellPrice: 14.5 },      // 1500% = 16.0 * boughtPrice, sellPrice = 13.5 * boughtPrice
-   { tp: 18.0, sellPrice: 16.5 },      // 1700% = 18.0 * boughtPrice, sellPrice = 15.5 * boughtPrice
-   { tp: 20.0, sellPrice: 18.5 }       // 1900% = 19.0 * boughtPrice, sellPrice = 17.5 * boughtPrice
+   { tp: 0.8, sellPrice: 0.25 },
+   { tp: 1.5, sellPrice: 0.75 },
+   { tp: 2, sellPrice: 1.25 },
+   { tp: 2.5, sellPrice: 1.5 },
+   { tp: 3, sellPrice: 2 },
+   { tp: 3.5, sellPrice: 2.5 },
+   { tp: 4, sellPrice: 3 },
+   { tp: 4.5, sellPrice: 3.5 },
+   { tp: 5, sellPrice: 4 },
+   { tp: 6, sellPrice: 5 },
+   { tp: 7, sellPrice: 6 },
+   { tp: 8, sellPrice: 7 },
+   { tp: 9, sellPrice: 8 },
+   { tp: 10, sellPrice: 9 },
 ];
 
 export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
