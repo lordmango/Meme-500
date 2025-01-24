@@ -71,25 +71,6 @@ import { connect } from "puppeteer-real-browser";
                         }
                     }
                 }
-            
-                // if (boughtElement && soldElement) {
-                //     const boughtText = boughtElement.textContent.replace(/[^0-9.]/g, ""); // Extract numeric value
-                //     const soldText = soldElement.textContent.replace(/[^0-9.]/g, ""); // Extract numeric value
-
-                //     const boughtValue = parseFloat(boughtText);
-                //     const soldValue = parseFloat(soldText);
-
-                //     logMessages.push(`Row ${index + 1}: Bought = ${boughtValue}, Sold = ${soldValue}`);
-
-                //     if (boughtValue >= soldValue) {
-                //         const solscanLink = row.querySelector(".custom-1dwgrrr a")?.href;
-                //         if (solscanLink && solscanLink.startsWith("https://solscan.io")) {
-                //             filteredLinks.push(solscanLink);
-                //         }
-                //     }
-                // } else {
-                //     logMessages.push(`Row ${index + 1}: Missing bought or sold value.`);
-                // }
             });
 
             return { filteredLinks };
