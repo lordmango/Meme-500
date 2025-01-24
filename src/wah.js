@@ -38,14 +38,23 @@ import { connect } from "puppeteer-real-browser";
                     const boughtAmount = boughtElement.querySelector('span').textContent.trim();
                     if (boughtAmount === '-') continue; // Skip if no bought amount
             
-                    const boughtTokenAmount = parseFloat(boughtElement.querySelector('span span').textContent.trim());
+                    const boughtTokenElement = boughtElement.querySelector('span span').textContent.trim()
+                    let boughtTokenAmount = parseFloat(boughtTokenElement);
+                    if (boughtTokenElement.includes('M')) boughtTokenAmount = parseFloat(boughtTokenElement) * 1000000
+                    if (boughtTokenElement.includes('K')) boughtTokenAmount = parseFloat(boughtTokenElement) * 1000
+
                     const boughtNumTxns = parseInt(boughtElement.querySelector('span span + span + span').textContent.trim());
             
                     // Extract data for sold element
                     const soldAmount = soldElement.querySelector('span').textContent.trim();
                     if (soldAmount === '-') continue; // Skip if no sold amount
             
-                    const soldTokenAmount = parseFloat(soldElement.querySelector('span span').textContent.trim());
+                    const soldTokenElement = soldElement.querySelector('span span').textContent.trim()
+                    let soldTokenAmount = parseFloat(soldTokenElement);;
+                    if (soldTokenElement.includes('M')) boughtTokenAmount = parseFloat(soldTokenElement) * 1000000
+                    if (soldTokenElement.includes('K')) boughtTokenAmount = parseFloat(soldTokenElement) * 1000
+                    
+                    const solNumTxns = parseInt(soldElement.querySelector('span span + span + span').textContent.trim());
             
                     // Check conditions
                     if (boughtNumTxns >= 100) continue; // Skip if transactions >= 100
