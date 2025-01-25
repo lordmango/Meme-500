@@ -61,10 +61,11 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    }
 
    // Sell if the live price hits the sell price
+   // if (livePrice >= boughtPrice * 1.25) {
+   // if (livePrice <= currentToken.sellPrice && livePrice > 0) {
    if (livePrice <= currentToken.sellPrice && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
-      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       priceManager.removeToken(tokenId); // Stop tracking the token

@@ -1,4 +1,5 @@
 import { connect } from "puppeteer-real-browser";
+import fs from "fs";
 
 (async () => {
     const { browser, page } = await connect({
@@ -13,7 +14,7 @@ import { connect } from "puppeteer-real-browser";
 
     try {
         console.log("Navigating to the URL...");
-        await page.goto("https://dexscreener.com/solana/gbyubaet9raoojptxbpekrjrbbzylatgn2pbu2uwhguz", {
+        await page.goto("https://dexscreener.com/solana/78sbwyimvhlumzzg1bdmd6oggig8qpmgyzqcxnymxx4z", {
             waitUntil: "domcontentloaded",
         });
         console.log("Page loaded successfully!");
@@ -74,10 +75,17 @@ import { connect } from "puppeteer-real-browser";
         });
 
         console.log("Filtered Links:");
-        console.log(filteredLinks);
+        console.log(JSON.stringify(filteredLinks, null, 2));
 
-        console.log("Logged Data (Bought and Sold Tokens):");
-        console.log(loggedData);
+        // Save to "prospects.json"
+        const prospectsFilePath = "/Users/lord_mango/Meme-500/prospects.json";
+        const existingData = fs.existsSync(prospectsFilePath)
+            ? JSON.parse(fs.readFileSync(prospectsFilePath, "utf8"))
+            : [];
+
+        const updatedData = [...existingData, ...filteredLinks];
+        fs.writeFileSync(prospectsFilePath, JSON.stringify(updatedData, null, 2), "utf8");
+        console.log(`Filtered links successfully saved to ${prospectsFilePath}`);
 
     } catch (err) {
         console.error("An error occurred:", err);
