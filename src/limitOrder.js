@@ -1,5 +1,5 @@
 import priceManager from './priceManager.js';
-import { swapTokens } from './sellToken.js';
+import { swapTokens } from './swapToken.js';
 
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
 const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports

@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
-import { swapTokens } from './sellToken.js';
+import { swapTokens } from './swapToken.js';
 
 let counter = 0;
 const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
