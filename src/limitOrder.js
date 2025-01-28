@@ -67,7 +67,6 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       priceManager.removeToken(tokenId); // Stop tracking the token
       monitoredTokens.delete(tokenId); // Clean up local state
       triggeredThresholds.delete(tokenId); // Clean up thresholds
