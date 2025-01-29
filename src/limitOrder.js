@@ -60,26 +60,35 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
       }
    }
 
-   // base stop loss at -75% from buy price
+   // Base stop loss at -75% from buy price
    if (livePrice <= boughtPrice * 0.25) {
-      console.log("[LimitOrder] Selling token ${tokenId} at stop loss");
-      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-      priceManager.removeToken(tokenId); // Stop tracking the token
-      monitoredTokens.delete(tokenId); // Clean up local state
-      triggeredThresholds.delete(tokenId); // Clean up thresholds
+      console.log(`[LimitOrder] Selling token ${tokenId} at stop loss`);
+      try {
+         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+      } catch (error) {
+         console.error(`[LimitOrder] Swap failed for token ${tokenId} at stop loss`);
+      } finally {
+         priceManager.removeToken(tokenId); // Stop tracking the token
+         monitoredTokens.delete(tokenId); // Clean up local state
+         triggeredThresholds.delete(tokenId); // Clean up thresholds
+      }
       return;
    }
 
    // Sell if the live price hits the sell price
-   // if (livePrice >= boughtPrice * 1.25) {
-   // if (livePrice <= currentToken.sellPrice && livePrice > 0) {
    if (livePrice <= currentToken.sellPrice && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
-      await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-      priceManager.removeToken(tokenId); // Stop tracking the token
-      monitoredTokens.delete(tokenId); // Clean up local state
-      triggeredThresholds.delete(tokenId); // Clean up thresholds
+      try {
+         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+      } catch (error) {
+         console.error(`[LimitOrder] Swap failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
+      } finally {
+         priceManager.removeToken(tokenId); // Stop tracking the token
+         monitoredTokens.delete(tokenId); // Clean up local state
+         triggeredThresholds.delete(tokenId); // Clean up thresholds
+      }
       return;
    }
+
 }

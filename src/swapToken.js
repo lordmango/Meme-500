@@ -41,9 +41,9 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
                        priorityLevelWithMaxLamports: {
                            maxLamports: priorityFee,
                            global: false,
-                           priorityLevel: "veryHigh"
-                       }
-                   }
+                           priorityLevel: "veryHigh",
+                       },
+                   },
                }),
            }).then(res => res.json());
 
@@ -68,14 +68,14 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
            });
 
            console.log(`[SellToken] Swap successful: https://solscan.io/tx/${txid}`);
-           return; // Exit the function on success
+           return; // Exit on success
 
        } catch (error) {
            retryCount++;
-           console.error(`[SellToken] Attempt ${retryCount} failed: ${error.message}`);
+           console.error(`[SellToken] Attempt ${retryCount} failed.`);
            if (retryCount === maxRetries) {
                console.error("[SellToken] Max retries reached. Transaction failed.");
-               throw error;
+               throw error; // Allow the calling function to handle the error
            }
            console.log("[SellToken] Retrying...");
        }
