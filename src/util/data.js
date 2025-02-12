@@ -2,6 +2,29 @@ import fs from 'fs'
 
 const filePath = 'data/cache.json';
 
+export function editJson(tokenId, newData, data) {
+    try {
+
+        // Find the index of the existing tokenId
+        const index = data.findIndex(d => d.tokenId === tokenId);
+
+        if (index >= 0) {
+            // Update the existing entry with new data
+            data[index] = { ...data[index], ...newData };
+        } else {
+            // If tokenId is not found, add it as a new entry
+            data.push({ tokenId, ...newData });
+        }
+
+        // Write back the updated JSON data
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+
+    } catch (error) {
+        console.error('Error updating JSON file:', error);
+    }
+}
+
+
 export function writeToJson(newData, isNew = true) {
    try {
        let data = [];

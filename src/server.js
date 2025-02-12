@@ -1,9 +1,11 @@
 import express from 'express';
 import priceManager from './priceManager.js';
+import { executePython } from './util/marwan.js';
 // import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
-import { readFromJson, writeToJson } from './util/data.js';
+import { editJson, readFromJson, writeToJson } from './util/data.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
+const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const app = express();
 const totalFees = .016 // photon
 
@@ -27,25 +29,63 @@ app.post('/transaction', async (req, res) => {
 
     // Process the transaction
     const defiTxn = processTransaction(txn, walletAddress);
+
+    const solPrice = await getPriceData();
+    const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice;
    
-    if (defiTxn) {
-
-        const existingData = readFromJson(defiTxn.out_token_address);
-        if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
-
-        // Add the token to PriceManager with the bought price
+    if (defiTxn && defiTxn.wallet_address === CUPSEY) {
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
-            const solPrice = await getPriceData();
-            const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice;
-            priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
+            const existingData = readFromJson(defiTxn.out_token_address);    
+            // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
+            if (existingData) {
+                if (existingData.triggered) return;
 
-         //    writeToJson({
-         //       tokenId: defiTxn.out_token_address,
-         //       boughtPrice,
-         //       timestamp: defiTxn.timestamp,
-         //       outAmount: defiTxn.out_amount
-         //   })
+                let newData = {};
+                if (existingData.sells > 0) {
+                    checkParameters(
+                        defiTxn.out_token_address,
+                        defiTxn.timestamp,
+                        boughtPrice * 1_000_000_000
+                    );
+                    newData = {
+                        buys: existingData.buys + 1, 
+                        buyAmount: existingData.buyAmount + defiTxn.out_amount,
+                        triggered: true,
+                    }
+                } else {
+                    newData = {
+                        buys: existingData.buys + 1, 
+                        buyAmount: existingData.buyAmount + defiTxn.out_amount
+                    }
+                }
+                editJson(defiTxn.out_token_address, newData)
+            } else {
+                writeToJson({
+                    tokenId: defiTxn.out_token_address,
+                    buys: 1,
+                    sells: 0,
+                    buyPrice: boughtPrice,
+                    buyAmount: defiTxn.out_amount,
+                    sellAmount: 0,
+                    triggered: false,
+                })
+            }
+        } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {
+            const existingData = readFromJson(defiTxn.in_token_address);
+            // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
+            if (existingData) {
+                if (existingData.triggered) return;
+
+                editJson(defiTxn.in_token_address, {
+                    sellAmount: existingData.sellAmount + defiTxn.in_amount,
+                    sells: existingData.sells + 1,
+                }, existingData)
+            } else {
+                return;
+            }
         }
+    
+        priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
         return res.status(200).json(defiTxn);
     }
@@ -57,11 +97,35 @@ app.post('/transaction', async (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-
-
 });
 
 // Helper functions (Unchanged from your current code)
+
+async function checkParameters(tokenId, timestamp, mcap) {
+    const pairResponse = await fetch(`https://api-v3.raydium.io/pools/info/mint?mint1=${tokenId}&poolType=all&poolSortField=default&sortType=desc&pageSize=1&page=1`)
+    const pairData = await pairResponse.json();
+
+    const pairId = pairData.data.data[0].id;
+
+    const ohlcvReponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairId}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`)
+    const ohlcvData = await ohlcvReponse.json();
+
+    const candles = ohlcvData.data.attributes.ohlcv_list.map(d => ({
+        volume: d[5],
+        green: d[1] < d[4]
+    }));
+
+    executePython([
+        mcap, // Market Cap (size of the company or asset)
+        0,      // All Sold? (1 = Yes, 0 = No)
+        candles[0].green ? 1 : 0,      // Buy Candle (1 = Green candle, 0 = Red candle)
+        candles[1].green ? 1 : 0,      // P1 Candle (1 = Green candle, 0 = Red candle)
+        candles[2].green ? 1 : 0,      // P2 Candle (1 = Green candle, 0 = Red candle)
+        candles[0].volume,  // Buy Volume (how much was bought)
+        candles[1].volume,  // P1 Volume (volume of previous period 1)
+        candles[2].volume    // P2 Volume (volume of previous period 2)
+    ])
+}
 
 function processTransaction(tx, walletAddress) {
     if (
@@ -99,9 +163,14 @@ function processTransaction(tx, walletAddress) {
             const finalChanges = analyzeAccountChanges(changes, direction)
 
             return {
+                signature: tx.transaction.signatures[0],
+                in_token_address: finalChanges.from,
+                in_amount: Math.abs(finalChanges.fromAmount),
+                spl_direction: direction,
                 sol_change: Math.abs(parseFloat(solChange)),
                 out_token_address: finalChanges.to,
                 out_amount: Math.abs(finalChanges.toAmount),
+                wallet_address: walletAddress,
                 timestamp: new Date(tx.blockTime).getTime() / 1000,
             };
         } else return {}
