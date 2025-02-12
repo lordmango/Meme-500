@@ -49,6 +49,16 @@ class PriceManager {
         this.browser = null; // Puppeteer browser instance
     }
 
+    updateBoughtPrice(tokenId, newBoughtPrice) {
+        if (this.tokens.has(tokenId)) {
+            let tokenData = this.tokens.get(tokenId);
+            tokenData.boughtPrice = newBoughtPrice;
+            this.tokens.set(tokenId, tokenData);
+        } else {
+            console.log(`Token with ID ${tokenId} not found.`);
+        }
+    }
+
     // Add a token to the memory and start monitoring its price
     async addToken(tokenId, boughtPrice, out_amount) {
         if (this.tokens.has(tokenId)) {
@@ -98,9 +108,9 @@ class PriceManager {
 
     // Monitor the price for a specific token
     async monitorPrice(tokenId, page) {
-        const tokenData = this.tokens.get(tokenId);
-
         while (this.tokens.has(tokenId)) {
+            const tokenData = this.tokens.get(tokenId);
+
             const newPrice = await fetchPrice(page, tokenId);
             if (!newPrice) await new Promise((resolve) => setTimeout(resolve, 1000));
 

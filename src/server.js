@@ -3,8 +3,15 @@ import priceManager from './priceManager.js';
 import { executePython } from './util/marwan.js';
 // import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
 import { editJson, readFromJson, writeToJson } from './util/data.js';
+import { swapTokens } from './swapToken.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
+const PRIORITY_FEE = 8000000; // Priority fee in lamports
+const MIN_BPS = 1000;      // Min slippage
+const MAX_BPS = 1500;      // Max slippage
+const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
+const SOL_AMOUNT = 250;         // 1000 = 1 Sol
+
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const app = express();
 const totalFees = .016 // photon
@@ -42,15 +49,31 @@ app.post('/transaction', async (req, res) => {
 
                 let newData = {};
                 if (existingData.sells > 0) {
-                    checkParameters(
+                    const buy = checkParameters(
                         defiTxn.out_token_address,
                         defiTxn.timestamp,
                         boughtPrice * 1_000_000_000
                     );
+
+                    // if (buy) {
+                    //     const newBoughtPrice = await swapTokens(
+                    //         SOL_MINT_ADDRESS, 
+                    //         defiTxn.out_token_address, 
+                    //         SOL_AMOUNT, 
+                    //         PRIORITY_FEE,
+                    //         MIN_BPS,
+                    //         MAX_BPS,
+                    //         QUOTE_SLIPPAGE,
+                    //         solPrice
+                    //     )
+
+                    //     priceManager.updateBoughtPrice(defiTxn.out_token_address, newBoughtPrice)
+                    // }
                     newData = {
                         buys: existingData.buys + 1, 
                         buyAmount: existingData.buyAmount + defiTxn.out_amount,
                         triggered: true,
+                        probability: buy,
                     }
                 } else {
                     newData = {
@@ -75,6 +98,7 @@ app.post('/transaction', async (req, res) => {
             // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
             if (existingData) {
                 if (existingData.triggered) return;
+                priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
                 editJson(defiTxn.in_token_address, {
                     sellAmount: existingData.sellAmount + defiTxn.in_amount,
@@ -85,7 +109,6 @@ app.post('/transaction', async (req, res) => {
             }
         }
     
-        priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
         return res.status(200).json(defiTxn);
     }
@@ -112,22 +135,30 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
     const candles = ohlcvData.data.attributes.ohlcv_list.map(d => ({
         volume: d[5],
-        green: d[1] < d[4]
+        green: d[1] < d[4] ? 1 : 0
     }));
 
-    executePython([
+    const probability = executePython([
         mcap, // Market Cap (size of the company or asset)
         0,      // All Sold? (1 = Yes, 0 = No)
-        candles[0].green ? 1 : 0,      // Buy Candle (1 = Green candle, 0 = Red candle)
-        candles[1].green ? 1 : 0,      // P1 Candle (1 = Green candle, 0 = Red candle)
-        candles[2].green ? 1 : 0,      // P2 Candle (1 = Green candle, 0 = Red candle)
+        candles[0].green,      // Buy Candle (1 = Green candle, 0 = Red candle)
+        candles[1] ? candles[1].green : candles[0].green,      // P1 Candle (1 = Green candle, 0 = Red candle)
+        candles[2] ? candles[2].green : candles[1] ? candles[1].green : candles[0].green,      // P2 Candle (1 = Green candle, 0 = Red candle)
         candles[0].volume,  // Buy Volume (how much was bought)
-        candles[1].volume,  // P1 Volume (volume of previous period 1)
-        candles[2].volume    // P2 Volume (volume of previous period 2)
+        candles[1] ? candles[1].volume : candles[0].volume,  // P1 Volume (volume of previous period 1)
+        candles[2] ? candles[2].volume : candles[1] ? candles[1].volume : candles[0].volume,    // P2 Volume (volume of previous period 2)
     ])
+
+    return probability
+
+    // if (probability >= 0.7) {
+    //     return true
+    // } else {
+    //     return false
+    // }
 }
 
-function processTransaction(tx, walletAddress) {
+export function processTransaction(tx, walletAddress) {
     if (
         tx &&
         tx.meta &&

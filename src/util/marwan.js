@@ -36,4 +36,6 @@ export function executePython(inputValues) {
          console.log(`Python script exited with code ${code}`);
          console.log("Predicted Probability:", outputData.trim()); // Display final output
      });     
+
+     return outputData
 }

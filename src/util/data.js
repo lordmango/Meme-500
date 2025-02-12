@@ -24,7 +24,6 @@ export function editJson(tokenId, newData, data) {
     }
 }
 
-
 export function writeToJson(newData, isNew = true) {
    try {
        let data = [];

@@ -14,7 +14,7 @@ with open(file_path, "r") as f:
 df = pd.DataFrame(data)
 
 # Convert "3 Hr High %" to binary target (1 if >= 0.40, else 0)
-df["Target"] = (df["3 Hr High %"] >= .4).astype(int)
+df["Target"] = (df["3 Hr High %"] >= 1).astype(int)
 
 # Filter dataset to only include Market Cap > 100,000
 df = df[df["Market Cap"] > 100000]
