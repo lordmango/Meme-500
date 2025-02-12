@@ -1,5 +1,5 @@
 import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
-import { processTransaction } from './server';
+import { processTransaction } from './server.js';
 import fetch from 'cross-fetch';
 import bs58 from 'bs58';
 import dotenv from 'dotenv';

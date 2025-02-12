@@ -42,7 +42,7 @@ app.post('/transaction', async (req, res) => {
    
     if (defiTxn && defiTxn.wallet_address === CUPSEY) {
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
-            const existingData = readFromJson(defiTxn.out_token_address);    
+            const existingData = readFromJson(defiTxn.out_token_address);
             // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
             if (existingData) {
                 if (existingData.triggered) return;
@@ -81,7 +81,7 @@ app.post('/transaction', async (req, res) => {
                         buyAmount: existingData.buyAmount + defiTxn.out_amount
                     }
                 }
-                editJson(defiTxn.out_token_address, newData)
+                editJson(newData, existingData)
             } else {
                 writeToJson({
                     tokenId: defiTxn.out_token_address,
@@ -98,9 +98,9 @@ app.post('/transaction', async (req, res) => {
             // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
             if (existingData) {
                 if (existingData.triggered) return;
-                priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
+                // priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
-                editJson(defiTxn.in_token_address, {
+                editJson({
                     sellAmount: existingData.sellAmount + defiTxn.in_amount,
                     sells: existingData.sells + 1,
                 }, existingData)
