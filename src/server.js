@@ -70,6 +70,7 @@ app.post('/transaction', async (req, res) => {
                     //     priceManager.updateBoughtPrice(defiTxn.out_token_address, newBoughtPrice)
                     // }
                     newData = {
+                        tokenId: defiTxn.out_token_address,
                         buys: existingData.buys + 1, 
                         buyAmount: existingData.buyAmount + defiTxn.out_amount,
                         triggered: true,
@@ -77,6 +78,7 @@ app.post('/transaction', async (req, res) => {
                     }
                 } else {
                     newData = {
+                        tokenId: defiTxn.out_token_address,
                         buys: existingData.buys + 1, 
                         buyAmount: existingData.buyAmount + defiTxn.out_amount
                     }
@@ -101,6 +103,7 @@ app.post('/transaction', async (req, res) => {
                 // priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
                 writeToJson({
+                    tokenId: defiTxn.in_token_address,
                     sellAmount: existingData.sellAmount + defiTxn.in_amount,
                     sells: existingData.sells + 1,
                 }, false)
@@ -117,7 +120,7 @@ app.post('/transaction', async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 3030;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
