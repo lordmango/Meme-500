@@ -60,10 +60,11 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
       }
    }
 
-   // Base stop loss at -75% from buy price
-   if (livePrice <= boughtPrice * 0.25) {
+   // Base stop loss at -60% from buy price
+   if (livePrice <= boughtPrice * 0.4) {
       console.log(`[LimitOrder] Selling token ${tokenId} at stop loss`);
       try {
+         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
          await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       } catch (error) {
          console.error(`[LimitOrder] Swap failed for token ${tokenId} at stop loss`);
@@ -76,10 +77,12 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    }
 
    // Sell if the live price hits the sell price
-   if (livePrice <= currentToken.sellPrice && livePrice > 0) {
+   // if (livePrice <= currentToken.sellPrice && livePrice > 0) {
+   if (livePrice >= boughtPrice * 1.3 && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       try {
+         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
          await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       } catch (error) {
          console.error(`[LimitOrder] Swap failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);

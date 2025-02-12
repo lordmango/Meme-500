@@ -5,7 +5,7 @@ import { readFromJson, writeToJson } from './util/data.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const app = express();
-const totalFees = .004
+const totalFees = .016 // photon
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -39,12 +39,12 @@ app.post('/transaction', async (req, res) => {
             const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice;
             priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount);
 
-            writeToJson({
-               tokenId: defiTxn.out_token_address,
-               boughtPrice,
-               timestamp: defiTxn.timestamp,
-               outAmount: defiTxn.out_amount
-           })
+         //    writeToJson({
+         //       tokenId: defiTxn.out_token_address,
+         //       boughtPrice,
+         //       timestamp: defiTxn.timestamp,
+         //       outAmount: defiTxn.out_amount
+         //   })
         }
 
         return res.status(200).json(defiTxn);
@@ -54,7 +54,7 @@ app.post('/transaction', async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 
