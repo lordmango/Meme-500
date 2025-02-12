@@ -2,18 +2,6 @@ import fs from 'fs'
 
 const filePath = 'data/cache.json';
 
-export function editJson(newData, data) {
-    try {
-
-        const updatedData = { ...data, ...newData };
-
-        fs.writeFileSync(filePath, JSON.stringify(updatedData, null, 2));
-
-    } catch (error) {
-        console.error('Error updating JSON file:', error);
-    }
-}
-
 export function writeToJson(newData, isNew = true) {
    try {
        let data = [];

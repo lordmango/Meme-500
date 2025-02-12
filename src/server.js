@@ -2,7 +2,7 @@ import express from 'express';
 import priceManager from './priceManager.js';
 import { executePython } from './util/marwan.js';
 // import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
-import { editJson, readFromJson, writeToJson } from './util/data.js';
+import { readFromJson, writeToJson } from './util/data.js';
 import { swapTokens } from './swapToken.js';
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
@@ -81,7 +81,7 @@ app.post('/transaction', async (req, res) => {
                         buyAmount: existingData.buyAmount + defiTxn.out_amount
                     }
                 }
-                editJson(newData, existingData)
+                writeToJson(newData, false)
             } else {
                 writeToJson({
                     tokenId: defiTxn.out_token_address,
@@ -100,10 +100,10 @@ app.post('/transaction', async (req, res) => {
                 if (existingData.triggered) return;
                 // priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
-                editJson({
+                writeToJson({
                     sellAmount: existingData.sellAmount + defiTxn.in_amount,
                     sells: existingData.sells + 1,
-                }, existingData)
+                }, false)
             } else {
                 return;
             }
