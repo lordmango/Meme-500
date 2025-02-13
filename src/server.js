@@ -15,6 +15,7 @@ const SOL_AMOUNT = 250;         // 1000 = 1 Sol
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const app = express();
 const totalFees = .016 // photon
+let pairID = '';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -38,10 +39,13 @@ app.post('/transaction', async (req, res) => {
     const defiTxn = processTransaction(txn, walletAddress);
 
     const solPrice = await getPriceData();
-    const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice;
+    const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice * 0.975;
    
     if (defiTxn && defiTxn.wallet_address === CUPSEY) {
         if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
+            
+            priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
+            
             const existingData = readFromJson(defiTxn.out_token_address);
             // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
             if (existingData) {
@@ -100,7 +104,7 @@ app.post('/transaction', async (req, res) => {
             // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
             if (existingData) {
                 if (existingData.triggered) return;
-                // priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
+               //  priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
                 writeToJson({
                     tokenId: defiTxn.in_token_address,
@@ -127,14 +131,23 @@ app.listen(PORT, () => {
 
 // Helper functions (Unchanged from your current code)
 
+export function setPairID(pairIDFromPriceManager) {
+   pairID = pairIDFromPriceManager;
+}
+
 async function checkParameters(tokenId, timestamp, mcap) {
-    const pairResponse = await fetch(`https://api-v3.raydium.io/pools/info/mint?mint1=${tokenId}&poolType=all&poolSortField=default&sortType=desc&pageSize=1&page=1`)
-    const pairData = await pairResponse.json();
+   console.log("tokenId " + tokenId)
+   console.log("timestamp " + timestamp)
+   console.log("mcap " + mcap)
+   //  const pairResponse = await fetch(`https://api-v3.raydium.io/pools/info/mint?mint1=${tokenId}&poolType=all&poolSortField=default&sortType=desc&pageSize=1&page=1`)
+   //  const pairData = await pairResponse.json();
+    
+   //  console.log(pairData);
+   //  const pairId = pairData.data.data[0].id;
 
-    const pairId = pairData.data.data[0].id;
-
-    const ohlcvReponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairId}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`)
+    const ohlcvReponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairID}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`)
     const ohlcvData = await ohlcvReponse.json();
+    console.log(ohlcvData);
 
     const candles = ohlcvData.data.attributes.ohlcv_list.map(d => ({
         volume: d[5],

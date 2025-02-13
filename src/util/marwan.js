@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pythonScriptPath = path.join(__dirname, "zaza3.py");
-const pythonExecutable = "/Users/bobob/Documents/meme500/Meme-500/.venv/bin/python"; // Use the virtual env's Python
+const pythonExecutable = "/Users/lord_mango/Meme-500/.venv/bin/python"; // Use the virtual env's Python
 
 export function executePython(inputValues) {
     console.log(inputValues)
