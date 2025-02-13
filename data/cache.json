@@ -1,20 +1,3 @@
 [
-  {
-    "tokenId": "PLAyKbtrwQWgWkpsEaMHPMeDLDourWEWVrx824kQN8P",
-    "buys": 2,
-    "sells": 15,
-    "buyPrice": 3477.8817841042473,
-    "buyAmount": 0.9565051,
-    "sellAmount": 0.9565050999999999,
-    "triggered": false
-  },
-  {
-    "tokenId": "C6NMa8NPDQ2b4Spr3aGL5tYTfFQSQ7sp7GssmahMpump",
-    "buys": 1,
-    "sells": 1,
-    "buyPrice": 0.000008914178827904434,
-    "buyAmount": 67020864,
-    "sellAmount": 67020864,
-    "triggered": false
-  }
+
 ]

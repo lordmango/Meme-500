@@ -68,6 +68,19 @@ app.post('/transaction', async (req, res) => {
    const txn = req.body[0];
    const walletAddress = txn.transaction.message.accountKeys[0];
 
+   let matchingProgramKey = null;
+
+   txn.transaction.message.accountKeys.some(key => {
+      const programId = key
+      matchingProgramKey = Object.keys(VALID_PROGRAM_IDS).find(
+         programKey => VALID_PROGRAM_IDS[programKey] === programId
+      );
+
+      return !!matchingProgramKey;
+   });
+
+   if (!matchingProgramKey) return res.status(200).send("Did not Interact with Dex")
+
    // Process the transaction
    const defiTxn = processTransaction(txn, walletAddress);
    if (defiTxn.dex == "Pump.fun") {return res.status(200).json(defiTxn)}
@@ -77,8 +90,6 @@ app.post('/transaction', async (req, res) => {
 
    if (defiTxn && defiTxn.wallet_address === CUPSEY) {
       if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
-
-         priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
          const existingData = readFromJson(defiTxn.out_token_address);
 
@@ -92,6 +103,8 @@ app.post('/transaction', async (req, res) => {
                   defiTxn.timestamp,
                   boughtPrice * 1_000_000_000
                );
+
+               const probability = buy ? buy : null;
 
                // if (buy) {
                //     const newBoughtPrice = await swapTokens(
@@ -112,7 +125,7 @@ app.post('/transaction', async (req, res) => {
                   buys: existingData.buys + 1,
                   buyAmount: existingData.buyAmount + defiTxn.out_amount,
                   triggered: true,
-                  probability: buy,
+                  probability,
                }
             } else {
                newData = {
@@ -160,9 +173,9 @@ app.post('/transaction', async (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3030;
-// app.listen(PORT, () => {
-//    console.log(`Server is running on port ${PORT}`);
-// });
+app.listen(PORT, () => {
+   console.log(`Server is running on port ${PORT}`);
+});
 
 // Helper functions (Unchanged from your current code)
 
@@ -170,7 +183,7 @@ export function setPairID(pairIDFromPriceManager) {
    pairID = pairIDFromPriceManager;
 }
 
-checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
+// checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
 async function checkParameters(tokenId, timestamp, mcap) {
    console.log("tokenId:", tokenId);
@@ -185,7 +198,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
    try {
        // Fetch OHLCV data
-       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/41vFva9hEXjSLiCshQhMfRS8cTdzzFnDosftndRMJaL8/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairID}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
        const ohlcvData = await ohlcvResponse.json();
 
        console.log("OHLCV Data:", ohlcvData);
@@ -228,13 +241,26 @@ async function checkParameters(tokenId, timestamp, mcap) {
            candles[0].green, // Buy Candle
            candles[1].green, // P1 Candle
            candles[2].green, // P2 Candle
-           candles[0].volume * (4 - (3 * ((timestamp % 60) - 15) / (59 - 15))), // Buy Volume
+           candles[0].volume, // * (4 - (3 * ((timestamp % 60) - 15) / (59 - 15))), Buy Volume
            candles[1].volume, // P1 Volume
            candles[2].volume, // P2 Volume
        ]);
 
        console.log("Received Probability:", probability);
-       return probability; // Returns { prob06, prob1 }
+
+       const { prob06, prob1 } = probability;
+       
+       // Check if prob06 and prob1 are greater than 0.7
+       const validProbabilities = [];
+       if (prob06 > 0.7) validProbabilities.push({ key: "prob06", value: prob06 });
+       if (prob1 > 0.7) validProbabilities.push({ key: "prob1", value: prob1 });
+       
+       // Determine the highest valid probability
+       if (validProbabilities.length > 0) {
+           const highest = validProbabilities.reduce((max, p) => (p.value > max.value ? p : max), validProbabilities[0]);
+           console.log(`Highest Probability: ${highest.key} = ${highest.value}`);
+           return { [highest.key]: highest.value };
+       }
 
    } catch (error) {
        console.error("Error in checkParameters:", error);
@@ -243,24 +269,12 @@ async function checkParameters(tokenId, timestamp, mcap) {
 }
 
 
-export function processTransaction(tx, walletAddress) {
+export function processTransaction(tx, programName, walletAddress) {
    if (
       tx &&
       tx.meta &&
       tx.meta.err === null
    ) {
-      let matchingProgramKey = null;
-
-      txn.transaction.message.accountKeys.some(key => {
-         const programId = key
-         matchingProgramKey = Object.keys(VALID_PROGRAM_IDS).find(
-            programKey => VALID_PROGRAM_IDS[programKey] === programId
-         );
-
-         return !!matchingProgramKey;
-      });
-
-      if (!matchingProgramKey) throw new Error("Did not Interact with Dex")
 
       const getFilteredBalances = (balances, key, value) =>
          (balances || []).filter(balance => {
@@ -301,43 +315,12 @@ export function processTransaction(tx, walletAddress) {
             out_amount: Math.abs(finalChanges.toAmount),
             wallet_address: walletAddress,
             timestamp: new Date(tx.blockTime).getTime() / 1000,
-            dex: matchingProgramKey
+            dex: programName
             };
       } else return {}
    }
 
    return null;
-}
-
-function analyzeAccountChanges(changes, direction) {
-   if (direction === "Swap") {
-
-      const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
-      const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
-
-      return {
-         from: fromToken.splTokenAddress,
-         fromAmount: parseFloat(fromToken.splAmount),
-         to: toToken.splTokenAddress,
-         toAmount: parseFloat(toToken.splAmount),
-      };
-   } else if (direction === "Buy") {
-      return {
-         from: "",
-         fromAmount: 0,
-         to: changes[0].splTokenAddress,
-         toAmount: parseFloat(changes[0].splAmount),
-      };
-   } else if (direction === "Sell") {
-      return {
-         from: changes[0].splTokenAddress,
-         fromAmount: parseFloat(changes[0].splAmount),
-         to: "",
-         toAmount: 0,
-      };
-   } else {
-      return null;
-   }
 }
 
 function calculateBalanceChanges(preBalances, postBalances) {
