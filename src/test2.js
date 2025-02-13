@@ -1,16 +1,18 @@
 import puppeteer from 'puppeteer';
 
 const testFetchPairID = async (tokenId) => {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-    const url = `https://ave.ai/token/${tokenId}-solana?from=Token`;
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
-    
+    let browser = null;
     try {
-        await page.waitForSelector('div.color-text-1.text-16px', { timeout: 10000 });
+        browser = await puppeteer.launch({ headless: false });
+        const page = await browser.newPage();
+        const url = `https://ave.ai/token/${tokenId}-solana?from=Token`;
+        await page.setViewport({ width: 1080, height: 1000 });
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
 
+        await page.waitForSelector('td[data-v-6fa340bb=""]', { timeout: 20000 });
+        
         const links = await page.$$eval('a[href^="https://solscan.io/token/"]', elements =>
-            elements.map(el => el.href)
+            elements.map(el => el.href, { timeout: 10000 })
         );
         
         if (links.length >= 3) {
@@ -21,9 +23,11 @@ const testFetchPairID = async (tokenId) => {
         }
     } catch (error) {
         console.error(`Error fetching pair ID for ${tokenId}:`, error.message);
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
     }
-    
-    await browser.close();
 };
 
 // Example usage
