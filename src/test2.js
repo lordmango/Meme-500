@@ -5,15 +5,16 @@ const testFetchPairID = async (tokenId) => {
     try {
         browser = await puppeteer.launch({ headless: false });
         const page = await browser.newPage();
-        const url = `https://ave.ai/token/${tokenId}-solana?from=Token`;
+        const url = `https://ave.ai/token/${tokenId}-solana`;
         await page.setViewport({ width: 1080, height: 1000 });
         await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-        await page.waitForSelector('td[data-v-6fa340bb=""]', { timeout: 20000 });
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         const links = await page.$$eval('a[href^="https://solscan.io/token/"]', elements =>
             elements.map(el => el.href, { timeout: 10000 })
         );
+        console.log(links)
         
         if (links.length >= 3) {
             const pairID = links[2].split('/').pop();
