@@ -219,6 +219,8 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
        console.log("Processed Candles:", candles);
 
+       if (timestamp % 60 <= 15) return 0;
+
        // ✅ Call Python script safely
        const probability = await executePython([
            mcap,
@@ -226,7 +228,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
            candles[0].green, // Buy Candle
            candles[1].green, // P1 Candle
            candles[2].green, // P2 Candle
-           candles[0].volume, // Buy Volume
+           candles[0].volume * (4 - (3 * ((timestamp % 60) - 15) / (59 - 15))), // Buy Volume
            candles[1].volume, // P1 Volume
            candles[2].volume, // P2 Volume
        ]);
