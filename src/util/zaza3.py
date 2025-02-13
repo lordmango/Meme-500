@@ -13,8 +13,9 @@ with open(file_path, "r") as f:
 # Convert to Pandas DataFrame
 df = pd.DataFrame(data)
 
-# Convert "3 Hr High %" to binary target (1 if >= 0.40, else 0)
-df["Target"] = (df["3 Hr High %"] >= 1).astype(int)
+# Create two target labels
+df["Target_06"] = (df["3 Hr High %"] >= 0.6).astype(int)
+df["Target_1"] = (df["3 Hr High %"] >= 1).astype(int)
 
 # Filter dataset to only include Market Cap > 100,000
 df = df[df["Market Cap"] > 100000]
@@ -29,19 +30,25 @@ df["P1 to Buy Volume Ratio"] = np.where(df["Buy Volume"] == 0, 0, df["P1 Volume"
 df["P2 to Buy Volume Ratio"] = np.where(df["Buy Volume"] == 0, 0, df["P2 Volume"] / df["Buy Volume"])
 
 # Select features for logistic regression
-X = df[["Market Cap", "All Sold?", "Buy Candle", "P1 Candle", "P2 Candle",
-        "Buy Volume", "P1 Volume", "P2 Volume",
-        "P2 to P1 Candle Ratio", "P1 to Buy Candle Ratio", "P2 to Buy Candle Ratio",
-        "P2 to P1 Volume Ratio", "P1 to Buy Volume Ratio", "P2 to Buy Volume Ratio"]]
-y = df["Target"]
+features = ["Market Cap", "All Sold?", "Buy Candle", "P1 Candle", "P2 Candle",
+            "Buy Volume", "P1 Volume", "P2 Volume",
+            "P2 to P1 Candle Ratio", "P1 to Buy Candle Ratio", "P2 to Buy Candle Ratio",
+            "P2 to P1 Volume Ratio", "P1 to Buy Volume Ratio", "P2 to Buy Volume Ratio"]
+
+X = df[features]
+y_06 = df["Target_06"]
+y_1 = df["Target_1"]
 
 # Standardize features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Train logistic regression model using all data
-model = LogisticRegression()
-model.fit(X_scaled, y)
+# Train logistic regression models
+model_06 = LogisticRegression()
+model_1 = LogisticRegression()
+
+model_06.fit(X_scaled, y_06)
+model_1.fit(X_scaled, y_1)
 
 # Check if command-line arguments are provided
 if len(sys.argv) > 1:
@@ -63,16 +70,17 @@ if len(sys.argv) > 1:
         buy_volume, p1_volume, p2_volume,
         p2_to_p1_candle_ratio, p1_to_buy_candle_ratio, p2_to_buy_candle_ratio,
         p2_to_p1_volume_ratio, p1_to_buy_volume_ratio, p2_to_buy_volume_ratio
-    ]], columns=X.columns)
+    ]], columns=features)
 
     # Standardize the new data using the same scaler
     new_data_scaled = scaler.transform(new_data)
 
-    # Predict probability
-    predicted_prob = model.predict_proba(new_data_scaled)[:, 1][0]
+    # Predict probabilities
+    predicted_prob_06 = model_06.predict_proba(new_data_scaled)[:, 1][0]
+    predicted_prob_1 = model_1.predict_proba(new_data_scaled)[:, 1][0]
 
-    # Print only the probability (formatted to 4 decimal places)
-    print(f"{predicted_prob:.4f}")
+    # Print both probabilities (formatted to 4 decimal places)
+    print(f"{predicted_prob_06:.4f} {predicted_prob_1:.4f}")
 
 else:
     print("\n🚀 Model trained! Now enter a new transaction to predict its probability.\n")

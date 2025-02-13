@@ -8,34 +8,30 @@ const pythonScriptPath = path.join(__dirname, "zaza3.py");
 const pythonExecutable = "/Users/lord_mango/Meme-500/.venv/bin/python"; // Use the virtual env's Python
 
 export function executePython(inputValues) {
-    console.log(inputValues)
-    // const inputValues = [
-    //     470000, // Market Cap (size of the company or asset)
-    //     1,      // All Sold? (1 = Yes, 0 = No)
-    //     1,      // Buy Candle (1 = Green candle, 0 = Red candle)
-    //     1,      // P1 Candle (1 = Green candle, 0 = Red candle)
-    //     0,      // P2 Candle (1 = Green candle, 0 = Red candle)
-    //     46000,  // Buy Volume (how much was bought)
-    //     33000,  // P1 Volume (volume of previous period 1)
-    //     4000    // P2 Volume (volume of previous period 2)
-    //  ];
-     
-     const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, ...inputValues.map(String)]);
-     let outputData = "";
-     
-     pythonProcess.stdout.on("data", (data) => {
-         console.log("Predicted Probability:", data.toString().trim());
-         outputData += data.toString().trim();
-     });
-     
-     pythonProcess.stderr.on("data", (data) => {
-         console.error("Error:", data.toString());
-     });
-     
-     pythonProcess.on("close", (code) => {
-         console.log(`Python script exited with code ${code}`);
-         console.log("Predicted Probability:", outputData.trim()); // Display final output
-     });     
+    console.log("Input Values:", inputValues);
 
-     return outputData
+    return new Promise((resolve, reject) => {
+        const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, ...inputValues.map(String)]);
+        let outputData = "";
+
+        pythonProcess.stdout.on("data", (data) => {
+            outputData += data.toString().trim();
+        });
+
+        pythonProcess.stderr.on("data", (data) => {
+            console.error("Python Error:", data.toString());
+        });
+
+        pythonProcess.on("close", (code) => {
+            console.log(`Python script exited with code ${code}`);
+
+            if (code === 0) {
+                const [prob06, prob1] = outputData.split(" ").map(parseFloat);
+                console.log("Predicted Probabilities:", { prob06, prob1 });
+                resolve({ prob06, prob1 }); // Return both probabilities
+            } else {
+                reject(new Error(`Python script exited with code ${code}`));
+            }
+        });
+    });
 }

@@ -28,17 +28,26 @@ export function writeToJson(newData, isNew = true) {
 }
 
 export function readFromJson(tokenId) {
-   try {
-       if (!fs.existsSync(filePath)) {
-           return null;
-       }
-       const fileContent = fs.readFileSync(filePath, 'utf-8');
-       const data = JSON.parse(fileContent || '[]'); // Parse empty array if needed
-       return data.find(d => d.tokenId === tokenId) || null; // Return matching entry or null
-   } catch (error) {
-       console.error('Error reading JSON file:', error);
-       return null;
-   }
+    try {
+        if (!fs.existsSync(filePath)) {
+            return null;
+        }
+
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        let data = JSON.parse(fileContent || '[]'); // Parse empty array if needed
+        const tokenIndex = data.findIndex(d => d.tokenId === tokenId);
+
+        if (tokenIndex !== -1 && data[tokenIndex].timestamp < Date.now() - 24 * 3600000) {
+            data.splice(tokenIndex, 1); // Remove expired token
+            fs.writeFileSync(filePath, JSON.stringify(data, null, 2)); // Save updated data
+            return null;
+        }
+
+        return tokenIndex !== -1 ? data[tokenIndex] : null; // Return matching entry or null
+    } catch (error) {
+        console.error('Error reading JSON file:', error);
+        return null;
+    }
 }
 
 export function removeFromJson(tokenId) {

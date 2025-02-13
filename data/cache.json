@@ -1,20 +1,20 @@
 [
   {
-    "tokenId": "fYbPZcdwrQg4MWwVtcYTfMGk8CMPSBPLimRVze3pump",
-    "buys": 1,
-    "sells": 1,
-    "buyPrice": 0.0001832283070408499,
-    "buyAmount": 20971124,
-    "sellAmount": 20971124,
+    "tokenId": "PLAyKbtrwQWgWkpsEaMHPMeDLDourWEWVrx824kQN8P",
+    "buys": 2,
+    "sells": 15,
+    "buyPrice": 3477.8817841042473,
+    "buyAmount": 0.9565051,
+    "sellAmount": 0.9565050999999999,
     "triggered": false
   },
   {
-    "tokenId": "CNX65wbgiXvcpVkTz173eBxA5G7NPfevRx2tEM62pump",
+    "tokenId": "C6NMa8NPDQ2b4Spr3aGL5tYTfFQSQ7sp7GssmahMpump",
     "buys": 1,
-    "sells": 0,
-    "buyPrice": 0.00006511131654517853,
-    "buyAmount": 29715330,
-    "sellAmount": 0,
+    "sells": 1,
+    "buyPrice": 0.000008914178827904434,
+    "buyAmount": 67020864,
+    "sellAmount": 67020864,
     "triggered": false
   }
 ]

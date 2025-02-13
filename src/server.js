@@ -1,9 +1,22 @@
 import express from 'express';
 import priceManager from './priceManager.js';
+import { removeMonitoredTokens } from './limitOrder.js';
 import { executePython } from './util/marwan.js';
 // import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
-import { readFromJson, writeToJson } from './util/data.js';
+import { readFromJson, writeToJson, removeFromJson } from './util/data.js';
 import { swapTokens } from './swapToken.js';
+
+const VALID_PROGRAM_IDS = {
+   "Raydium": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
+   "Raydium CPMM": "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
+   "Raydium CAMM": "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
+   "Pump.fun": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+   "Jupiter": "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
+   "Orca": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+   "Meteora": "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB",
+   "Meteora DLMM": "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
+   "OKX V2": "6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma"
+}
 
 const SOL_MINT_ADDRESS = "So11111111111111111111111111111111111111112";
 const PRIORITY_FEE = 8000000; // Priority fee in lamports
@@ -13,6 +26,8 @@ const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
 const SOL_AMOUNT = 250;         // 1000 = 1 Sol
 
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
+const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
 const app = express();
 const totalFees = .016 // photon
 let pairID = '';
@@ -20,114 +35,133 @@ let pairID = '';
 // Middleware to parse JSON bodies
 app.use(express.json());
 
+// Periodically check and remove expired tokens
+setInterval(() => {
+   let allTokens = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : [];
+
+   if (!Array.isArray(allTokens)) return; // Ensure it's an array
+
+   const currentTime = Date.now();
+   allTokens.filter(token => {
+       if (currentTime - token.timestamp >= THREE_HOURS) {
+           priceManager.removeToken(token.tokenId); // Stop tracking the token
+           removeMonitoredTokens(token.tokenId); // Clean up local state
+           removeFromJson(token.tokenId); // Remove token from JSON
+           console.log(`Stopped monitoring token: ${token.tokenId}`);
+       }
+   });
+
+}, 60 * 1000); // Check every minute
+
 // Basic route to handle transactions
 app.post('/transaction', async (req, res) => {
-    // const token = req.body.token;
+   // const token = req.body.token;
 
-    // const defiTxn = {
-    //     sol_change: 1,
-    //     out_token_address: token,
-    //     out_amount: 525000,
-    //     timestamp: 1673445
-    //   }
+   // const defiTxn = {
+   //     sol_change: 1,
+   //     out_token_address: token,
+   //     out_amount: 525000,
+   //     timestamp: 1673445
+   //   }
 
-    const txn = req.body[0];
+   const txn = req.body[0];
+   const walletAddress = txn.transaction.message.accountKeys[0];
 
-    const walletAddress = txn.transaction.message.accountKeys[0];
+   // Process the transaction
+   const defiTxn = processTransaction(txn, walletAddress);
+   if (defiTxn.dex == "Pump.fun") {return res.status(200).json(defiTxn)}
 
-    // Process the transaction
-    const defiTxn = processTransaction(txn, walletAddress);
+   const solPrice = await getPriceData();
+   const boughtPrice = ((defiTxn.sol_change - totalFees) / defiTxn.out_amount) * solPrice * 0.975;
 
-    const solPrice = await getPriceData();
-    const boughtPrice = ((defiTxn.sol_change-totalFees) / defiTxn.out_amount) * solPrice * 0.975;
-   
-    if (defiTxn && defiTxn.wallet_address === CUPSEY) {
-        if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
-            
-            priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
-            
-            const existingData = readFromJson(defiTxn.out_token_address);
-            // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
-            if (existingData) {
-                if (existingData.triggered) return;
+   if (defiTxn && defiTxn.wallet_address === CUPSEY) {
+      if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
 
-                let newData = {};
-                if (existingData.sells > 0) {
-                    const buy = checkParameters(
-                        defiTxn.out_token_address,
-                        defiTxn.timestamp,
-                        boughtPrice * 1_000_000_000
-                    );
+         priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
-                    // if (buy) {
-                    //     const newBoughtPrice = await swapTokens(
-                    //         SOL_MINT_ADDRESS, 
-                    //         defiTxn.out_token_address, 
-                    //         SOL_AMOUNT, 
-                    //         PRIORITY_FEE,
-                    //         MIN_BPS,
-                    //         MAX_BPS,
-                    //         QUOTE_SLIPPAGE,
-                    //         solPrice
-                    //     )
+         const existingData = readFromJson(defiTxn.out_token_address);
 
-                    //     priceManager.updateBoughtPrice(defiTxn.out_token_address, newBoughtPrice)
-                    // }
-                    newData = {
-                        tokenId: defiTxn.out_token_address,
-                        buys: existingData.buys + 1, 
-                        buyAmount: existingData.buyAmount + defiTxn.out_amount,
-                        triggered: true,
-                        probability: buy,
-                    }
-                } else {
-                    newData = {
-                        tokenId: defiTxn.out_token_address,
-                        buys: existingData.buys + 1, 
-                        buyAmount: existingData.buyAmount + defiTxn.out_amount
-                    }
-                }
-                writeToJson(newData, false)
+         if (existingData) {
+            if (existingData.triggered) return;
+
+            let newData = {};
+            if (existingData.sells > 0) {
+               const buy = checkParameters(
+                  defiTxn.out_token_address,
+                  defiTxn.timestamp,
+                  boughtPrice * 1_000_000_000
+               );
+
+               // if (buy) {
+               //     const newBoughtPrice = await swapTokens(
+               //         SOL_MINT_ADDRESS, 
+               //         defiTxn.out_token_address, 
+               //         SOL_AMOUNT, 
+               //         PRIORITY_FEE,
+               //         MIN_BPS,
+               //         MAX_BPS,
+               //         QUOTE_SLIPPAGE,
+               //         solPrice
+               //     )
+
+               //     priceManager.updateBoughtPrice(defiTxn.out_token_address, newBoughtPrice)
+               // }
+               newData = {
+                  tokenId: defiTxn.out_token_address,
+                  buys: existingData.buys + 1,
+                  buyAmount: existingData.buyAmount + defiTxn.out_amount,
+                  triggered: true,
+                  probability: buy,
+               }
             } else {
-                writeToJson({
-                    tokenId: defiTxn.out_token_address,
-                    buys: 1,
-                    sells: 0,
-                    buyPrice: boughtPrice,
-                    buyAmount: defiTxn.out_amount,
-                    sellAmount: 0,
-                    triggered: false,
-                })
+               newData = {
+                  tokenId: defiTxn.out_token_address,
+                  buys: existingData.buys + 1,
+                  buyAmount: existingData.buyAmount + defiTxn.out_amount
+               }
             }
-        } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {
-            const existingData = readFromJson(defiTxn.in_token_address);
-            // if (existingData && defiTxn.timestamp < existingData.timestamp + 24 * 3600) return;
-            if (existingData) {
-                if (existingData.triggered) return;
-               //  priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
+            writeToJson(newData, false)
+         } else {
+            writeToJson({
+               tokenId: defiTxn.out_token_address,
+               buys: 1,
+               sells: 0,
+               buyPrice: boughtPrice,
+               buyAmount: defiTxn.out_amount,
+               sellAmount: 0,
+               triggered: false,
+               timestamp: Date.now()
+            })
+         }
+      } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {
+         const existingData = readFromJson(defiTxn.in_token_address);
 
-                writeToJson({
-                    tokenId: defiTxn.in_token_address,
-                    sellAmount: existingData.sellAmount + defiTxn.in_amount,
-                    sells: existingData.sells + 1,
-                }, false)
-            } else {
-                return;
-            }
-        }
-    
+         if (existingData) {
+            if (existingData.triggered) return;
+            //  priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
-        return res.status(200).json(defiTxn);
-    }
+            writeToJson({
+               tokenId: defiTxn.in_token_address,
+               sellAmount: existingData.sellAmount + defiTxn.in_amount,
+               sells: existingData.sells + 1,
+            }, false)
+         } else {
+            return;
+         }
+      }
 
-    res.status(200).send('No significant changes detected.');
+
+      return res.status(200).json(defiTxn);
+   }
+
+   res.status(200).send('No significant changes detected.');
 });
 
 // Start the server
 const PORT = process.env.PORT || 3030;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//    console.log(`Server is running on port ${PORT}`);
+// });
 
 // Helper functions (Unchanged from your current code)
 
@@ -135,178 +169,223 @@ export function setPairID(pairIDFromPriceManager) {
    pairID = pairIDFromPriceManager;
 }
 
+checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1744715280, 250000)
+
 async function checkParameters(tokenId, timestamp, mcap) {
-   console.log("tokenId " + tokenId)
-   console.log("timestamp " + timestamp)
-   console.log("mcap " + mcap)
-   //  const pairResponse = await fetch(`https://api-v3.raydium.io/pools/info/mint?mint1=${tokenId}&poolType=all&poolSortField=default&sortType=desc&pageSize=1&page=1`)
-   //  const pairData = await pairResponse.json();
-    
-   //  console.log(pairData);
-   //  const pairId = pairData.data.data[0].id;
+   console.log("tokenId:", tokenId);
+   console.log("timestamp:", timestamp);
+   console.log("mcap:", mcap);
 
-    const ohlcvReponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairID}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`)
-    const ohlcvData = await ohlcvReponse.json();
-    console.log(ohlcvData);
+   if (mcap < 100000) {
+       priceManager.removeToken(tokenId);
+       removeMonitoredTokens(tokenId);
+       return { prob06: 0, prob1: 0 }; // Default values
+   }
 
-    const candles = ohlcvData.data.attributes.ohlcv_list.map(d => ({
-        volume: d[5],
-        green: d[1] < d[4] ? 1 : 0
-    }));
+   try {
+       // Fetch OHLCV data
+       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/55WZXdC1DT2DWZRBmC8a8F9irjnajdj55qBYzQqQu372/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+       const ohlcvData = await ohlcvResponse.json();
 
-    const probability = executePython([
-        mcap, // Market Cap (size of the company or asset)
-        0,      // All Sold? (1 = Yes, 0 = No)
-        candles[0].green,      // Buy Candle (1 = Green candle, 0 = Red candle)
-        candles[1] ? candles[1].green : candles[0].green,      // P1 Candle (1 = Green candle, 0 = Red candle)
-        candles[2] ? candles[2].green : candles[1] ? candles[1].green : candles[0].green,      // P2 Candle (1 = Green candle, 0 = Red candle)
-        candles[0].volume,  // Buy Volume (how much was bought)
-        candles[1] ? candles[1].volume : candles[0].volume,  // P1 Volume (volume of previous period 1)
-        candles[2] ? candles[2].volume : candles[1] ? candles[1].volume : candles[0].volume,    // P2 Volume (volume of previous period 2)
-    ])
+       console.log("OHLCV Data:", ohlcvData);
 
-    return probability
+       // ✅ Ensure API response is valid
+       if (!ohlcvData.data || !ohlcvData.data.attributes || !ohlcvData.data.attributes.ohlcv_list) {
+           console.error("Invalid OHLCV API response structure.");
+           return { prob06: 0, prob1: 0 };
+       }
 
-    // if (probability >= 0.7) {
-    //     return true
-    // } else {
-    //     return false
-    // }
+       // ✅ Extract OHLCV data safely
+       const ohlcvList = ohlcvData.data.attributes.ohlcv_list;
+       if (ohlcvList.length === 0) {
+           console.error("Empty OHLCV list received from API.");
+           return { prob06: 0, prob1: 0 };
+       }
+
+       // ✅ Parse candle data
+       const candles = ohlcvList.map(d => ({
+           volume: d[5],
+           green: d[1] < d[4] ? 1 : 0
+       }));
+
+       // ✅ Ensure we always have at least 3 candles
+       while (candles.length < 3) {
+           candles.push({ 
+               volume: candles[0]?.volume || 0, 
+               green: candles[0]?.green || 0 
+           });
+       }
+
+       console.log("Processed Candles:", candles);
+
+       // ✅ Call Python script safely
+       const probability = await executePython([
+           mcap,
+           0, // All Sold? (1 = Yes, 0 = No)
+           candles[0].green, // Buy Candle
+           candles[1].green, // P1 Candle
+           candles[2].green, // P2 Candle
+           candles[0].volume, // Buy Volume
+           candles[1].volume, // P1 Volume
+           candles[2].volume, // P2 Volume
+       ]);
+
+       console.log("Received Probability:", probability);
+       return probability; // Returns { prob06, prob1 }
+
+   } catch (error) {
+       console.error("Error in checkParameters:", error);
+       return { prob06: 0, prob1: 0 }; // Default values on error
+   }
 }
 
+
 export function processTransaction(tx, walletAddress) {
-    if (
-        tx &&
-        tx.meta &&
-        tx.meta.err === null
-    ) {
-        const getFilteredBalances = (balances, key, value) =>
-            (balances || []).filter(balance => {
-                if (key === "owner" && balance.mint === SOL_MINT_ADDRESS) {
-                    return false;
-                }
-                return balance[key] === value;
-            });
+   if (
+      tx &&
+      tx.meta &&
+      tx.meta.err === null
+   ) {
+      let matchingProgramKey = null;
 
-        const preBalances = getFilteredBalances(tx.meta?.preTokenBalances, 'owner', walletAddress)
-        const postBalances = getFilteredBalances(tx.meta?.postTokenBalances, 'owner', walletAddress)
-        let solChange = ((tx.meta?.postBalances[0] - tx.meta?.preBalances[0]) / 1e9);
+      txn.transaction.message.accountKeys.some(key => {
+         const programId = key
+         matchingProgramKey = Object.keys(VALID_PROGRAM_IDS).find(
+            programKey => VALID_PROGRAM_IDS[programKey] === programId
+         );
 
-        const changes = calculateBalanceChanges(preBalances, postBalances)
+         return !!matchingProgramKey;
+      });
 
-        if (changes.length > 0) {
-            const direction = changes.length === 2 ? "Swap" : changes.length === 1 && changes[0].splAmount > 0 ? "Buy" : "Sell";
-            if (direction === "Swap") {
-                const preBalances = getFilteredBalances(tx.meta?.preTokenBalances, 'mint', SOL_MINT_ADDRESS)
-                const postBalances = getFilteredBalances(tx.meta?.postTokenBalances, 'mint', SOL_MINT_ADDRESS)
-                const solChanges = calculateBalanceChanges(preBalances, postBalances)
-                const totalAbsSum = solChanges.reduce((sum, current) => {
-                    return sum + Math.abs(current.splAmount);
-                }, 0);
-                if (solChanges.length > 1) {
-                    solChange = totalAbsSum / 2;
-                } else solChange = totalAbsSum
+      if (!matchingProgramKey) throw new Error("Did not Interact with Dex")
+
+      const getFilteredBalances = (balances, key, value) =>
+         (balances || []).filter(balance => {
+            if (key === "owner" && balance.mint === SOL_MINT_ADDRESS) {
+               return false;
             }
-            const finalChanges = analyzeAccountChanges(changes, direction)
+            return balance[key] === value;
+         });
 
-            return {
-                signature: tx.transaction.signatures[0],
-                in_token_address: finalChanges.from,
-                in_amount: Math.abs(finalChanges.fromAmount),
-                spl_direction: direction,
-                sol_change: Math.abs(parseFloat(solChange)),
-                out_token_address: finalChanges.to,
-                out_amount: Math.abs(finalChanges.toAmount),
-                wallet_address: walletAddress,
-                timestamp: new Date(tx.blockTime).getTime() / 1000,
+      const preBalances = getFilteredBalances(tx.meta?.preTokenBalances, 'owner', walletAddress)
+      const postBalances = getFilteredBalances(tx.meta?.postTokenBalances, 'owner', walletAddress)
+      let solChange = ((tx.meta?.postBalances[0] - tx.meta?.preBalances[0]) / 1e9);
+
+      const changes = calculateBalanceChanges(preBalances, postBalances)
+
+      if (changes.length > 0) {
+         const direction = changes.length === 2 ? "Swap" : changes.length === 1 && changes[0].splAmount > 0 ? "Buy" : "Sell";
+         if (direction === "Swap") {
+            const preBalances = getFilteredBalances(tx.meta?.preTokenBalances, 'mint', SOL_MINT_ADDRESS)
+            const postBalances = getFilteredBalances(tx.meta?.postTokenBalances, 'mint', SOL_MINT_ADDRESS)
+            const solChanges = calculateBalanceChanges(preBalances, postBalances)
+            const totalAbsSum = solChanges.reduce((sum, current) => {
+               return sum + Math.abs(current.splAmount);
+            }, 0);
+            if (solChanges.length > 1) {
+               solChange = totalAbsSum / 2;
+            } else solChange = totalAbsSum
+         }
+         const finalChanges = analyzeAccountChanges(changes, direction)
+
+         return {
+            signature: tx.transaction.signatures[0],
+            in_token_address: finalChanges.from,
+            in_amount: Math.abs(finalChanges.fromAmount),
+            spl_direction: direction,
+            sol_change: Math.abs(parseFloat(solChange)),
+            out_token_address: finalChanges.to,
+            out_amount: Math.abs(finalChanges.toAmount),
+            wallet_address: walletAddress,
+            timestamp: new Date(tx.blockTime).getTime() / 1000,
+            dex: matchingProgramKey
             };
-        } else return {}
-    }
+      } else return {}
+   }
 
-    return null;
+   return null;
 }
 
 function analyzeAccountChanges(changes, direction) {
-    if (direction === "Swap") {
+   if (direction === "Swap") {
 
-        const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
-        const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
+      const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
+      const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
 
-        return {
-            from: fromToken.splTokenAddress,
-            fromAmount: parseFloat(fromToken.splAmount),
-            to: toToken.splTokenAddress,
-            toAmount: parseFloat(toToken.splAmount),
-        };
-    } else if (direction === "Buy") {
-        return {
-            from: "",
-            fromAmount: 0,
-            to: changes[0].splTokenAddress,
-            toAmount: parseFloat(changes[0].splAmount),
-        };
-    } else if (direction === "Sell") {
-        return {
-            from: changes[0].splTokenAddress,
-            fromAmount: parseFloat(changes[0].splAmount),
-            to: "",
-            toAmount: 0,
-        };
-    } else {
-        return null;
-    }
+      return {
+         from: fromToken.splTokenAddress,
+         fromAmount: parseFloat(fromToken.splAmount),
+         to: toToken.splTokenAddress,
+         toAmount: parseFloat(toToken.splAmount),
+      };
+   } else if (direction === "Buy") {
+      return {
+         from: "",
+         fromAmount: 0,
+         to: changes[0].splTokenAddress,
+         toAmount: parseFloat(changes[0].splAmount),
+      };
+   } else if (direction === "Sell") {
+      return {
+         from: changes[0].splTokenAddress,
+         fromAmount: parseFloat(changes[0].splAmount),
+         to: "",
+         toAmount: 0,
+      };
+   } else {
+      return null;
+   }
 }
 
 function calculateBalanceChanges(preBalances, postBalances) {
-    const [longerBalances, shorterBalances] = preBalances.length >= postBalances.length
-        ? [preBalances, postBalances]
-        : [postBalances, preBalances];
+   const [longerBalances, shorterBalances] = preBalances.length >= postBalances.length
+      ? [preBalances, postBalances]
+      : [postBalances, preBalances];
 
-    const changes = longerBalances.reduce((acc, balance) => {
-        const matchingBalance = shorterBalances.find(
-            (b) => b.accountIndex === balance.accountIndex
-        );
+   const changes = longerBalances.reduce((acc, balance) => {
+      const matchingBalance = shorterBalances.find(
+         (b) => b.accountIndex === balance.accountIndex
+      );
 
-        const splAmount = longerBalances === postBalances ? (
-            (balance?.uiTokenAmount.uiAmount || 0) -
-            (matchingBalance?.uiTokenAmount.uiAmount || 0)
-        ) : (
-            (matchingBalance?.uiTokenAmount.uiAmount || 0) -
-            (balance?.uiTokenAmount.uiAmount || 0)
-        );
+      const splAmount = longerBalances === postBalances ? (
+         (balance?.uiTokenAmount.uiAmount || 0) -
+         (matchingBalance?.uiTokenAmount.uiAmount || 0)
+      ) : (
+         (matchingBalance?.uiTokenAmount.uiAmount || 0) -
+         (balance?.uiTokenAmount.uiAmount || 0)
+      );
 
-        if (Math.abs(splAmount) > 0) {
-            acc.push({
-                splTokenAddress: balance.mint,
-                splAmount: splAmount,
-            });
-        }
+      if (Math.abs(splAmount) > 0) {
+         acc.push({
+            splTokenAddress: balance.mint,
+            splAmount: splAmount,
+         });
+      }
 
-        return acc;
-    }, []);
+      return acc;
+   }, []);
 
-    return changes;
+   return changes;
 }
 
 async function getPriceData() {
-    try {
+   try {
       const res = await fetch("https://hermes.pyth.network/v2/updates/price/latest?ids%5B%5D=0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43&ids%5B%5D=0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace&ids%5B%5D=0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        next: {
-          revalidate: 5
-        }
+         method: "GET",
+         headers: {
+            "Content-Type": "application/json"
+         },
+         next: {
+            revalidate: 5
+         }
       })
-  
+
       const data = await res.json();
       const solPrice = data.parsed[2].price.price / 10 ** 8;
-  
+
       return solPrice;
-    } catch (error) {
+   } catch (error) {
       console.error(error)
       return 0;
-    }
-  }
-  
+   }
+}

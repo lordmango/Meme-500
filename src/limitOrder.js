@@ -70,7 +70,7 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
          console.error(`[LimitOrder] Swap failed for token ${tokenId} at stop loss`);
       } finally {
          priceManager.removeToken(tokenId); // Stop tracking the token
-         monitoredTokens.delete(tokenId); // Clean up local state
+         removeMonitoredTokens(tokenId); // Clean up local state
          triggeredThresholds.delete(tokenId); // Clean up thresholds
       }
       return;
@@ -88,10 +88,14 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
          console.error(`[LimitOrder] Swap failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       } finally {
          priceManager.removeToken(tokenId); // Stop tracking the token
-         monitoredTokens.delete(tokenId); // Clean up local state
+         removeMonitoredTokens(tokenId); // Clean up local state
          triggeredThresholds.delete(tokenId); // Clean up thresholds
       }
       return;
    }
 
+}
+
+export function removeMonitoredTokens(tokenID) {
+   monitoredTokens.delete(tokenID);
 }
