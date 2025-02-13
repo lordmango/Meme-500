@@ -2,7 +2,7 @@ import express from 'express';
 import priceManager from './priceManager.js';
 import { removeMonitoredTokens } from './limitOrder.js';
 import { executePython } from './util/marwan.js';
-// import { startLimitOrderListener } from './limitOrder.js'; // Import LimitOrder logic
+import fs from 'fs'
 import { readFromJson, writeToJson, removeFromJson } from './util/data.js';
 import { swapTokens } from './swapToken.js';
 
@@ -27,6 +27,7 @@ const SOL_AMOUNT = 250;         // 1000 = 1 Sol
 
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const filePath = 'data/cache.json';
 
 const app = express();
 const totalFees = .016 // photon
@@ -169,7 +170,7 @@ export function setPairID(pairIDFromPriceManager) {
    pairID = pairIDFromPriceManager;
 }
 
-checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1744715280, 250000)
+checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
 async function checkParameters(tokenId, timestamp, mcap) {
    console.log("tokenId:", tokenId);
@@ -184,7 +185,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
    try {
        // Fetch OHLCV data
-       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/55WZXdC1DT2DWZRBmC8a8F9irjnajdj55qBYzQqQu372/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/41vFva9hEXjSLiCshQhMfRS8cTdzzFnDosftndRMJaL8/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
        const ohlcvData = await ohlcvResponse.json();
 
        console.log("OHLCV Data:", ohlcvData);
