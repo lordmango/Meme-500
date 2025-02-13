@@ -67,9 +67,6 @@ class PriceManager {
          return;
       }
 
-      // Store token data in memory
-      this.tokens.set(tokenId, { page, livePrice: null, boughtPrice, out_amount });
-
       // Initialize the browser if not already running
       if (!this.browser) {
          this.browser = await puppeteer.launch({ headless: false });
@@ -82,6 +79,9 @@ class PriceManager {
       await page.setViewport({ width: 1080, height: 1000 })
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       console.log(`[PriceManager] Monitoring price for token: ${tokenId}`);
+
+      // Store token data in memory
+      this.tokens.set(tokenId, { page, livePrice: null, boughtPrice, out_amount });
 
       // Start monitoring the price
       this.monitorPrice(tokenId, page);
