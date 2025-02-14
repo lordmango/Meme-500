@@ -37,22 +37,22 @@ const app = express();
 app.use(express.json());
 
 // Periodically check and remove expired tokens
-setInterval(() => {
-   let allTokens = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : [];
+// setInterval(() => {
+//    let allTokens = fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf-8')) : [];
 
-   if (!Array.isArray(allTokens)) return; // Ensure it's an array
+//    if (!Array.isArray(allTokens)) return; // Ensure it's an array
 
-   const currentTime = Date.now();
-   allTokens.filter(token => {
-      if (currentTime - token.timestamp >= THREE_HOURS) {
-         priceManager.removeToken(token.tokenId); // Stop tracking the token
-         removeMonitoredTokens(token.tokenId); // Clean up local state
-         removeFromJson(token.tokenId); // Remove token from JSON
-         console.log(`Stopped monitoring token: ${token.tokenId}`);
-      }
-   });
+//    const currentTime = Date.now();
+//    allTokens.filter(token => {
+//       if (currentTime - token.timestamp >= THREE_HOURS) {
+//          priceManager.removeToken(token.tokenId); // Stop tracking the token
+//          removeMonitoredTokens(token.tokenId); // Clean up local state
+//          removeFromJson(token.tokenId); // Remove token from JSON
+//          console.log(`Stopped monitoring token: ${token.tokenId}`);
+//       }
+//    });
 
-}, 60 * 1000); // Check every minute
+// }, 60 * 1000); // Check every minute
 
 // Basic route to handle transactions
 app.post('/transaction', async (req, res) => {
@@ -177,9 +177,13 @@ app.listen(PORT, () => {
 // checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
 async function checkParameters(tokenId, timestamp, mcap) {
+   
+   const roundedTimestamp = Math.round(timestamp);
+   const roundedMcap = Math.round(mcap);
+   
    console.log("tokenId:", tokenId);
-   console.log("timestamp:", timestamp);
-   console.log("mcap:", mcap);
+   console.log("timestamp:", roundedTimestamp);
+   console.log("mcap:", roundedMcap);
 
    if (mcap < 100000) {
       console.log("Marketcap < 100K");
@@ -200,7 +204,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
       console.log("Pair Address:", pairAddress);
 
       // Fetch OHLCV data
-      const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+      const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${roundedTimestamp}`);
 
       if (!ohlcvResponse.ok) {
          console.error("Error fetching OHLCV data. Response status:", ohlcvResponse.status);
@@ -242,7 +246,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
       console.log("Processed Candles:", candles);
 
       const probability = await executePython([
-         mcap,
+         roundedMcap,
          0,
          candles[0].green,
          candles[1].green,
@@ -316,7 +320,7 @@ export function processTransaction(tx, programName, walletAddress) {
             out_token_address: finalChanges.to,
             out_amount: Math.abs(finalChanges.toAmount),
             wallet_address: walletAddress,
-            timestamp: new Date(tx.blockTime).getTime() / 1000,
+            timestamp: new Date(tx.blockTime).getTime(),
             dex: programName
          };
       } else return {}
