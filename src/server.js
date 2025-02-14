@@ -103,8 +103,21 @@ app.post('/transaction', async (req, res) => {
                );
 
                if (takeProfit != 0) {
-                   priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);             
+                   priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);     
                   //  await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
+               } else {
+                  const remainingTime = 60 - (defiTxn.timestamp % 60)
+                  setTimeout(async () => {
+                     const takeProfit = await checkParameters(
+                        defiTxn.out_token_address,
+                        defiTxn.timestamp + remainingTime,
+                        boughtPrice * 1_000_000_000,
+                        existingData.buyAmount - existingData.sellAmount
+                     );    
+                     if (takeProfit !== 0) {
+                        priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                     }  
+                  }, remainingTime * 1000);
                }
 
                newData = {
