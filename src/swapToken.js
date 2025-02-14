@@ -16,7 +16,7 @@ if (!WALLET_PRIVATE_KEY) throw new Error("Missing WALLET_PRIVATE_KEY in .env fil
 const connection = new Connection(RPC_URL, "confirmed");
 const wallet = Keypair.fromSecretKey(bs58.decode(WALLET_PRIVATE_KEY));
 
-export async function swapTokens(inputMint, outputMint, amount, priorityFee, minSlippage, maxSlippage, quoteSlippage, solPrice) {
+export async function swapTokens(inputMint, outputMint, amount, priorityFee, minSlippage, maxSlippage, quoteSlippage) {
     try {
       //   console.log(inputMint, outputMint, amount)
       //   console.log("[Test] Fetching quote for swap...");
@@ -61,26 +61,15 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         });
         console.log(`[SwapToken] Swap successfull: https://solscan.io/tx/${txid}`);
 
-        const latestBlockhash = await connection.getLatestBlockhash();
-        await connection.confirmTransaction(
-            {
-                signature: txid,
-                blockhash: latestBlockhash.blockhash,
-                lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-            },
-            "confirmed"
-        );
-
-        const txnData = await connection.getTransaction(txid, {
-            commitment: "confirmed",
-            maxSupportedTransactionVersion: 0,
-        });
-
-        if (txnData) {
-            const defiTxn = processTransaction(txnData, WALLET_ADDRESS);
-            const price = (defiTxn.sol_change - 0.01) / defiTxn.out_amount * solPrice
-            return price;
-        } else return 0;
+      //   const latestBlockhash = await connection.getLatestBlockhash();
+      //   await connection.confirmTransaction(
+      //       {
+      //           signature: txid,
+      //           blockhash: latestBlockhash.blockhash,
+      //           lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      //       },
+      //       "confirmed"
+      //   );
 
     } catch (error) {
         console.error("[SwapToken] Failed to Swap token", error.message);

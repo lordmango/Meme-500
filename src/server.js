@@ -28,10 +28,10 @@ const SOL_AMOUNT = 250;         // 1000 = 1 Sol
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 const filePath = 'data/cache.json';
-
-const app = express();
 const totalFees = .016 // photon
 let pairID = '';
+
+const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -44,26 +44,18 @@ setInterval(() => {
 
    const currentTime = Date.now();
    allTokens.filter(token => {
-       if (currentTime - token.timestamp >= THREE_HOURS) {
-           priceManager.removeToken(token.tokenId); // Stop tracking the token
-           removeMonitoredTokens(token.tokenId); // Clean up local state
-           removeFromJson(token.tokenId); // Remove token from JSON
-           console.log(`Stopped monitoring token: ${token.tokenId}`);
-       }
+      if (currentTime - token.timestamp >= THREE_HOURS) {
+         priceManager.removeToken(token.tokenId); // Stop tracking the token
+         removeMonitoredTokens(token.tokenId); // Clean up local state
+         removeFromJson(token.tokenId); // Remove token from JSON
+         console.log(`Stopped monitoring token: ${token.tokenId}`);
+      }
    });
 
 }, 60 * 1000); // Check every minute
 
 // Basic route to handle transactions
 app.post('/transaction', async (req, res) => {
-   // const token = req.body.token;
-
-   // const defiTxn = {
-   //     sol_change: 1,
-   //     out_token_address: token,
-   //     out_amount: 525000,
-   //     timestamp: 1673445
-   //   }
 
    const txn = req.body[0];
    const walletAddress = txn.transaction.message.accountKeys[0];
@@ -83,63 +75,58 @@ app.post('/transaction', async (req, res) => {
 
    // Process the transaction
    const defiTxn = processTransaction(txn, matchingProgramKey, walletAddress);
-   if (defiTxn.dex == "Pump.fun") {return res.status(200).json(defiTxn)}
-   if (walletAddress === CUPSEY) {console.log(matchingProgramKey + " " + walletAddress)}
+   if (defiTxn.dex == "Pump.fun") { return res.status(200).json(defiTxn) }
+
    const solPrice = await getPriceData();
    const boughtPrice = ((defiTxn.sol_change - totalFees) / defiTxn.out_amount) * solPrice * 0.975;
 
-   if (defiTxn && walletAddress === CUPSEY) {
+   if (defiTxn && walletAddress === CUPSEY) {      // buy
+      
       console.log(defiTxn)
+      
       if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
 
          const existingData = readFromJson(defiTxn.out_token_address);
 
          if (existingData) {
-            if (existingData.triggered) return;
 
+            if (existingData.triggered) {return}
             let newData = {};
+
             if (existingData.sells > 0) {
 
-               const buy = await checkParameters(
+               const takeProfit = await checkParameters(
                   defiTxn.out_token_address,
                   defiTxn.timestamp,
                   boughtPrice * 1_000_000_000
                );
 
-               const probability = buy ? buy : null;
+               if (takeProfit != 0) {
+                   priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);             
+                  //  await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
+               }
 
-               priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
-
-               // if (buy) {
-               //     const newBoughtPrice = await swapTokens(
-               //         SOL_MINT_ADDRESS, 
-               //         defiTxn.out_token_address, 
-               //         SOL_AMOUNT, 
-               //         PRIORITY_FEE,
-               //         MIN_BPS,
-               //         MAX_BPS,
-               //         QUOTE_SLIPPAGE,
-               //         solPrice
-               //     )
-
-               //     priceManager.updateBoughtPrice(defiTxn.out_token_address, newBoughtPrice)
-               // }
                newData = {
                   tokenId: defiTxn.out_token_address,
                   buys: existingData.buys + 1,
                   buyAmount: existingData.buyAmount + defiTxn.out_amount,
                   triggered: true,
-                  probability,
+                  takeProfit: takeProfit,
                }
+
             } else {
+               
                newData = {
                   tokenId: defiTxn.out_token_address,
                   buys: existingData.buys + 1,
                   buyAmount: existingData.buyAmount + defiTxn.out_amount
                }
+           
             }
             writeToJson(newData, false)
+         
          } else {
+            
             writeToJson({
                tokenId: defiTxn.out_token_address,
                buys: 1,
@@ -150,22 +137,28 @@ app.post('/transaction', async (req, res) => {
                triggered: false,
                timestamp: Date.now()
             })
+         
          }
-      } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {
+      
+      } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {      // sell
+         
          const existingData = readFromJson(defiTxn.in_token_address);
 
          if (existingData) {
-            if (existingData.triggered) return;
+            
+            if (existingData.triggered) {return}
+            
             writeToJson({
                tokenId: defiTxn.in_token_address,
                sellAmount: existingData.sellAmount + defiTxn.in_amount,
                sells: existingData.sells + 1,
             }, false)
+         
          } else {
             return;
          }
+     
       }
-
 
       return res.status(200).json(defiTxn);
    }
@@ -179,11 +172,7 @@ app.listen(PORT, () => {
    console.log(`Server is running on port ${PORT}`);
 });
 
-// Helper functions (Unchanged from your current code)
-
-export function setPairID(pairIDFromPriceManager) {
-   pairID = pairIDFromPriceManager;
-}
+// Helper functions
 
 // checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
@@ -193,97 +182,95 @@ async function checkParameters(tokenId, timestamp, mcap) {
    console.log("mcap:", mcap);
 
    if (mcap < 100000) {
-       priceManager.removeToken(tokenId);
-       removeMonitoredTokens(tokenId);
-       return { prob06: 0, prob1: 0 };
+      console.log("Marketcap < 100K");
+      return 0;
    }
 
    try {
-       // Fetch pair address from dexscreener
-       const pairResponse = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${tokenId}`);
-       const pairData = await pairResponse.json();
-       
-       if (!pairData || !Array.isArray(pairData) || pairData.length === 0 || !pairData[0].pairAddress) {
-           console.error("Invalid pair data response.");
-           return { prob06: 0, prob1: 0 };
-       }
+      // Fetch pair address from dexscreener
+      const pairResponse = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${tokenId}`);
+      const pairData = await pairResponse.json();
 
-       const pairAddress = pairData[0].pairAddress;
-       console.log("Pair Address:", pairAddress);
+      if (!pairData || !Array.isArray(pairData) || pairData.length === 0 || !pairData[0].pairAddress) {
+         console.error("Invalid pair data response.");
+         return 0;
+      }
 
-       // Fetch OHLCV data
-       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
-       
-       if (!ohlcvResponse.ok) {
-           console.error("Error fetching OHLCV data. Response status:", ohlcvResponse.status);
-           return { prob06: 0, prob1: 0 };
-       }
+      const pairAddress = pairData[0].pairAddress;
+      console.log("Pair Address:", pairAddress);
 
-       const ohlcvData = await ohlcvResponse.json();
-       
-       if (ohlcvData.errors) {
-           console.error("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
-           return { prob06: 0, prob1: 0 };
-       }
+      // Fetch OHLCV data
+      const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
 
-       console.log("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
+      if (!ohlcvResponse.ok) {
+         console.error("Error fetching OHLCV data. Response status:", ohlcvResponse.status);
+         return 0;
+      }
 
-       if (!ohlcvData.data || !ohlcvData.data.attributes || !ohlcvData.data.attributes.ohlcv_list) {
-           console.error("Invalid OHLCV API response structure.");
-           return { prob06: 0, prob1: 0 };
-       }
+      const ohlcvData = await ohlcvResponse.json();
 
-       const ohlcvList = ohlcvData.data.attributes.ohlcv_list;
-       if (ohlcvList.length === 0) {
-           console.error("Empty OHLCV list received from API.");
-           return { prob06: 0, prob1: 0 };
-       }
+      if (ohlcvData.errors) {
+         console.error("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
+         return 0;
+      }
 
-       const candles = ohlcvList.map(d => ({
-           volume: d[5],
-           green: d[1] < d[4] ? 1 : 0
-       }));
+      console.log("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
 
-       while (candles.length < 3) {
-           candles.push({
-               volume: candles[0]?.volume || 0,
-               green: candles[0]?.green || 0
-           });
-       }
+      if (!ohlcvData.data || !ohlcvData.data.attributes || !ohlcvData.data.attributes.ohlcv_list) {
+         console.error("Invalid OHLCV API response structure.");
+         return 0;
+      }
 
-       console.log("Processed Candles:", candles);
+      const ohlcvList = ohlcvData.data.attributes.ohlcv_list;
+      if (ohlcvList.length === 0) {
+         console.error("Empty OHLCV list received from API.");
+         return 0;
+      }
 
-       if (timestamp % 60 <= 15) return 0;
+      const candles = ohlcvList.map(d => ({
+         volume: d[5],
+         green: d[1] < d[4] ? 1 : 0
+      }));
 
-       const probability = await executePython([
-           mcap,
-           0,
-           candles[0].green,
-           candles[1].green,
-           candles[2].green,
-           candles[0].volume,
-           candles[1].volume,
-           candles[2].volume,
-       ]);
+      while (candles.length < 3) {
+         candles.push({
+            volume: candles[0]?.volume || 0,
+            green: candles[0]?.green || 0
+         });
+      }
 
-       console.log("Received Probability:", probability);
+      console.log("Processed Candles:", candles);
 
-       const { prob06, prob1 } = probability;
-       const validProbabilities = [];
-       if (prob06 > 0.7) validProbabilities.push({ key: "prob06", value: prob06 });
-       if (prob1 > 0.7) validProbabilities.push({ key: "prob1", value: prob1 });
+      const probability = await executePython([
+         mcap,
+         0,
+         candles[0].green,
+         candles[1].green,
+         candles[2].green,
+         candles[0].volume,
+         candles[1].volume,
+         candles[2].volume,
+      ]);
 
-       if (validProbabilities.length > 0) {
-           const highest = validProbabilities.reduce((max, p) => (p.value > max.value ? p : max), validProbabilities[0]);
-           console.log(`Highest Probability: ${highest.key} = ${highest.value}`);
-           return { [highest.key]: highest.value };
-       }
+      console.log("Received Probability:", probability);
+
+      const { prob06, prob1 } = probability;
+      if (prob1 > 0.7) {
+         return 2;
+      } else if (prob06 > 0.7) {
+         return 1.6;
+      } else {
+         return 0;
+      }
    } catch (error) {
-       console.error("Error in checkParameters:", error);
-       return { prob06: 0, prob1: 0 };
+      console.error("Error in checkParameters:", error);
+      return 0;
    }
 }
 
+export function setPairID(pairIDFromPriceManager) {
+   pairID = pairIDFromPriceManager;
+}
 
 export function processTransaction(tx, programName, walletAddress) {
    if (
@@ -331,7 +318,7 @@ export function processTransaction(tx, programName, walletAddress) {
             wallet_address: walletAddress,
             timestamp: new Date(tx.blockTime).getTime() / 1000,
             dex: programName
-            };
+         };
       } else return {}
    }
 
@@ -340,35 +327,35 @@ export function processTransaction(tx, programName, walletAddress) {
 
 function analyzeAccountChanges(changes, direction) {
    if (direction === "Swap") {
- 
-     const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
-     const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
- 
-     return {
-       from: fromToken.splTokenAddress,
-       fromAmount: parseFloat(fromToken.splAmount),
-       to: toToken.splTokenAddress,
-       toAmount: parseFloat(toToken.splAmount),
-     };
+
+      const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
+      const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
+
+      return {
+         from: fromToken.splTokenAddress,
+         fromAmount: parseFloat(fromToken.splAmount),
+         to: toToken.splTokenAddress,
+         toAmount: parseFloat(toToken.splAmount),
+      };
    } else if (direction === "Buy") {
-     return {
-       from: "",
-       fromAmount: 0,
-       to: changes[0].splTokenAddress,
-       toAmount: parseFloat(changes[0].splAmount),
-     };
+      return {
+         from: "",
+         fromAmount: 0,
+         to: changes[0].splTokenAddress,
+         toAmount: parseFloat(changes[0].splAmount),
+      };
    } else if (direction === "Sell") {
-     return {
-       from: changes[0].splTokenAddress,
-       fromAmount: parseFloat(changes[0].splAmount),
-       to: "",
-       toAmount: 0,
-     };
+      return {
+         from: changes[0].splTokenAddress,
+         fromAmount: parseFloat(changes[0].splAmount),
+         to: "",
+         toAmount: 0,
+      };
    } else {
-     return null;
+      return null;
    }
- }
- 
+}
+
 
 function calculateBalanceChanges(preBalances, postBalances) {
    const [longerBalances, shorterBalances] = preBalances.length >= postBalances.length

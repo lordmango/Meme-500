@@ -27,9 +27,13 @@ const thresholds = [
    { tp: 10, sellPrice: 9 },
 ];
 
-export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
-   console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, buy_price=${boughtPrice.toFixed(8)}`);
-   if (!boughtPrice) return;
+export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount, takeProfit) {
+   
+   if (!boughtPrice) {return}
+   
+   console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, 
+               buy_price=${boughtPrice.toFixed(8)}, buy_price=${takeProfit}`);
+   
    // Initialize the token state if not already set
    if (!monitoredTokens.has(tokenId)) {
       monitoredTokens.set(tokenId, { sellPrice: 0 });
@@ -39,7 +43,7 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    const currentToken = monitoredTokens.get(tokenId);
    const tokenTriggeredThresholds = triggeredThresholds.get(tokenId);
 
-   console.log('Sell price:', currentToken.sellPrice);
+   // console.log('Sell price:', currentToken.sellPrice);
 
    // Process thresholds
    // for (const { tp, sellPrice } of thresholds) {
@@ -60,30 +64,14 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
    //    }
    // }
 
-   // Base stop loss at -60% from buy price
-   if (livePrice <= boughtPrice * 0.5) {
-      console.log(`[LimitOrder] Selling token ${tokenId} at stop loss`);
-      try {
-         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-      } catch (error) {
-         console.error(`[LimitOrder] Swap failed for token ${tokenId} at stop loss`);
-      } finally {
-         priceManager.removeToken(tokenId); // Stop tracking the token
-         removeMonitoredTokens(tokenId); // Clean up local state
-         triggeredThresholds.delete(tokenId); // Clean up thresholds
-      }
-      return;
-   }
-
    // Sell if the live price hits the sell price
    // if (livePrice <= currentToken.sellPrice && livePrice > 0) {
-   if (livePrice >= boughtPrice * 2 && livePrice > 0) {
+   if (livePrice >= boughtPrice * takeProfit && livePrice > 0) {
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       try {
-         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-         await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         // await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         // await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       } catch (error) {
          console.error(`[LimitOrder] Swap failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       } finally {
@@ -94,7 +82,25 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount) {
       return;
    }
 
+   // Base stop loss at -60% from buy price
+   // if (livePrice <= boughtPrice * 0.5) {
+   //    console.log(`[LimitOrder] Selling token ${tokenId} at stop loss`);
+   //    try {
+   //       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+   //       await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+   //    } catch (error) {
+   //       console.error(`[LimitOrder] Swap failed for token ${tokenId} at stop loss`);
+   //    } finally {
+   //       priceManager.removeToken(tokenId); // Stop tracking the token
+   //       removeMonitoredTokens(tokenId); // Clean up local state
+   //       triggeredThresholds.delete(tokenId); // Clean up thresholds
+   //    }
+   //    return;
+   // }
+
 }
+
+// Helper functions
 
 export function removeMonitoredTokens(tokenID) {
    monitoredTokens.delete(tokenID);

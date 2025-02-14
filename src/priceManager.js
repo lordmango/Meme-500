@@ -2,13 +2,6 @@ import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
 import { setPairID } from './server.js';
 
-let counter = 0;
-const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
-const SELL_PRIORITY_FEE = 2000000; // Priority fee in lamports
-const SELL_MIN_BPS = 1000; // Min slippage
-const SELL_MAX_BPS = 1000; // Min slippage
-const QUOTE_SLIPPAGE = 1000; // Slippage when we send quote
-
 const fetchPrice = async (page, tokenId) => {
    try {
       await page.waitForSelector('div.color-text-1.text-16px', { timeout: 10000 });
@@ -60,7 +53,7 @@ class PriceManager {
    }
 
    // Add a token to the memory and start monitoring its price
-   async addToken(tokenId, boughtPrice, out_amount) {
+   async addToken(tokenId, boughtPrice, out_amount, takeProfit) {
       if (this.tokens.has(tokenId)) {
          // console.log(`[PriceManager] Token ${tokenId} is already being monitored.`);
          return;
@@ -76,7 +69,7 @@ class PriceManager {
       const page = await this.browser.newPage();
 
       // Store token data in memory
-      this.tokens.set(tokenId, { page, livePrice: null, boughtPrice, out_amount });
+      this.tokens.set(tokenId, { page, livePrice: null, boughtPrice, out_amount, takeProfit });
 
       const url = `https://ave.ai/token/${tokenId}-solana?from=Token`;
       await page.setViewport({ width: 1080, height: 1000 })
@@ -119,7 +112,7 @@ class PriceManager {
 
          if (newPrice !== null && newPrice !== tokenData.livePrice) {
             tokenData.livePrice = newPrice; // Update live price in memory
-            await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount); // Notify price change
+            await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount, tokenData.takeProfit); // Notify price change
             //  console.log(`[PriceManager] Price updated for ${tokenId}: ${newPrice}`);
          }
 
