@@ -98,7 +98,8 @@ app.post('/transaction', async (req, res) => {
                const takeProfit = await checkParameters(
                   defiTxn.out_token_address,
                   defiTxn.timestamp,
-                  boughtPrice * 1_000_000_000
+                  boughtPrice * 1_000_000_000,
+                  existingData.buyAmount - existingData.sellAmount
                );
 
                if (takeProfit != 0) {
@@ -176,7 +177,7 @@ app.listen(PORT, () => {
 
 // checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
-async function checkParameters(tokenId, timestamp, mcap) {
+async function checkParameters(tokenId, timestamp, mcap, holdingBalance) {
    
    const roundedTimestamp = Math.round(timestamp);
    const roundedMcap = Math.round(mcap);
@@ -247,7 +248,7 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
       const probability = await executePython([
          roundedMcap,
-         0,
+         holdingBalance < 100 ? 1 : 0,
          candles[0].green,
          candles[1].green,
          candles[2].green,
