@@ -16,15 +16,15 @@ const fetchPrice = async (page, tokenId) => {
       // Extract the price value
       const priceText = await page.$eval('div.color-text-1.text-16px', (el) => el.textContent.trim());
 
-      const links = await page.$$eval('a[href^="https://solscan.io/token/"]', elements =>
-         elements.map(el => el.href, { timeout: 10000 })
-     );
+   //    const links = await page.$$eval('a[href^="https://solscan.io/token/"]', elements =>
+   //       elements.map(el => el.href, { timeout: 10000 })
+   //   );
       
-      if (links.length >= 3) {
-         const pairID = links[2].split('/').pop();
-         setPairID(pairID);
-         // console.log(`Extracted Pair ID: ${pairID}`);
-      }
+   //    if (links.length >= 3) {
+   //       const pairID = links[2].split('/').pop();
+   //       setPairID(pairID);
+   //       // console.log(`Extracted Pair ID: ${pairID}`);
+   //    }
 
       // Handle subscript notation in price
       const subscriptMatch = priceText.match(/\{(\d+)\}(\d+)/);

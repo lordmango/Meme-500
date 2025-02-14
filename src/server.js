@@ -100,13 +100,15 @@ app.post('/transaction', async (req, res) => {
             let newData = {};
             if (existingData.sells > 0) {
 
-               const buy = checkParameters(
+               const buy = await checkParameters(
                   defiTxn.out_token_address,
                   defiTxn.timestamp,
                   boughtPrice * 1_000_000_000
                );
 
                const probability = buy ? buy : null;
+
+               priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
 
                // if (buy) {
                //     const newBoughtPrice = await swapTokens(
@@ -154,9 +156,6 @@ app.post('/transaction', async (req, res) => {
 
          if (existingData) {
             if (existingData.triggered) return;
-            
-            priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
-            
             writeToJson({
                tokenId: defiTxn.in_token_address,
                sellAmount: existingData.sellAmount + defiTxn.in_amount,
@@ -196,40 +195,59 @@ async function checkParameters(tokenId, timestamp, mcap) {
    if (mcap < 100000) {
        priceManager.removeToken(tokenId);
        removeMonitoredTokens(tokenId);
-       return { prob06: 0, prob1: 0 }; // Default values
+       return { prob06: 0, prob1: 0 };
    }
 
    try {
+       // Fetch pair address from dexscreener
+       const pairResponse = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${tokenId}`);
+       const pairData = await pairResponse.json();
+       
+       if (!pairData || !Array.isArray(pairData) || pairData.length === 0 || !pairData[0].pairAddress) {
+           console.error("Invalid pair data response.");
+           return { prob06: 0, prob1: 0 };
+       }
+
+       const pairAddress = pairData[0].pairAddress;
+       console.log("Pair Address:", pairAddress);
+
        // Fetch OHLCV data
-       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairID}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+       const ohlcvResponse = await fetch(`https://api.geckoterminal.com/api/v2/networks/solana/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=3&before_timestamp=${timestamp}`);
+       
+       if (!ohlcvResponse.ok) {
+           console.error("Error fetching OHLCV data. Response status:", ohlcvResponse.status);
+           return { prob06: 0, prob1: 0 };
+       }
+
        const ohlcvData = await ohlcvResponse.json();
+       
+       if (ohlcvData.errors) {
+           console.error("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
+           return { prob06: 0, prob1: 0 };
+       }
 
-       console.log("OHLCV Data:", ohlcvData);
+       console.log("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
 
-       // ✅ Ensure API response is valid
        if (!ohlcvData.data || !ohlcvData.data.attributes || !ohlcvData.data.attributes.ohlcv_list) {
            console.error("Invalid OHLCV API response structure.");
            return { prob06: 0, prob1: 0 };
        }
 
-       // ✅ Extract OHLCV data safely
        const ohlcvList = ohlcvData.data.attributes.ohlcv_list;
        if (ohlcvList.length === 0) {
            console.error("Empty OHLCV list received from API.");
            return { prob06: 0, prob1: 0 };
        }
 
-       // ✅ Parse candle data
        const candles = ohlcvList.map(d => ({
            volume: d[5],
            green: d[1] < d[4] ? 1 : 0
        }));
 
-       // ✅ Ensure we always have at least 3 candles
        while (candles.length < 3) {
-           candles.push({ 
-               volume: candles[0]?.volume || 0, 
-               green: candles[0]?.green || 0 
+           candles.push({
+               volume: candles[0]?.volume || 0,
+               green: candles[0]?.green || 0
            });
        }
 
@@ -237,37 +255,32 @@ async function checkParameters(tokenId, timestamp, mcap) {
 
        if (timestamp % 60 <= 15) return 0;
 
-       // ✅ Call Python script safely
        const probability = await executePython([
            mcap,
-           0, // All Sold? (1 = Yes, 0 = No)
-           candles[0].green, // Buy Candle
-           candles[1].green, // P1 Candle
-           candles[2].green, // P2 Candle
-           candles[0].volume, // * (4 - (3 * ((timestamp % 60) - 15) / (59 - 15))), Buy Volume
-           candles[1].volume, // P1 Volume
-           candles[2].volume, // P2 Volume
+           0,
+           candles[0].green,
+           candles[1].green,
+           candles[2].green,
+           candles[0].volume,
+           candles[1].volume,
+           candles[2].volume,
        ]);
 
        console.log("Received Probability:", probability);
 
        const { prob06, prob1 } = probability;
-       
-       // Check if prob06 and prob1 are greater than 0.7
        const validProbabilities = [];
        if (prob06 > 0.7) validProbabilities.push({ key: "prob06", value: prob06 });
        if (prob1 > 0.7) validProbabilities.push({ key: "prob1", value: prob1 });
-       
-       // Determine the highest valid probability
+
        if (validProbabilities.length > 0) {
            const highest = validProbabilities.reduce((max, p) => (p.value > max.value ? p : max), validProbabilities[0]);
            console.log(`Highest Probability: ${highest.key} = ${highest.value}`);
            return { [highest.key]: highest.value };
        }
-
    } catch (error) {
        console.error("Error in checkParameters:", error);
-       return { prob06: 0, prob1: 0 }; // Default values on error
+       return { prob06: 0, prob1: 0 };
    }
 }
 
