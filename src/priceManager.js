@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
-import { setPairID } from './server.js';
+import { setPairID, updateLivePrice } from './server.js';
 
 const fetchPrice = async (page, tokenId) => {
    try {
@@ -46,6 +46,16 @@ class PriceManager {
       if (this.tokens.has(tokenId)) {
          let tokenData = this.tokens.get(tokenId);
          tokenData.boughtPrice = newBoughtPrice;
+         this.tokens.set(tokenId, tokenData);
+      } else {
+         console.log(`Token with ID ${tokenId} not found.`);
+      }
+   }
+
+   updateTakeProfit(tokenId, newTakeProfit) {
+      if (this.tokens.has(tokenId)) {
+         let tokenData = this.tokens.get(tokenId);
+         tokenData.takeProfit = newTakeProfit;
          this.tokens.set(tokenId, tokenData);
       } else {
          console.log(`Token with ID ${tokenId} not found.`);
@@ -112,8 +122,8 @@ class PriceManager {
 
          if (newPrice !== null && newPrice !== tokenData.livePrice) {
             tokenData.livePrice = newPrice; // Update live price in memory
-            await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount, tokenData.takeProfit); // Notify price change
-            //  console.log(`[PriceManager] Price updated for ${tokenId}: ${newPrice}`);
+            await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount, tokenData.takeProfit);
+            updateLivePrice(newPrice);
          }
 
          await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 1 second before checking again

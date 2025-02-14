@@ -151,5 +151,15 @@
     "sellAmount": 28423968,
     "triggered": false,
     "timestamp": 1739511234178
+  },
+  {
+    "tokenId": "3zPsdckxgxUjyDvvJKxQGaYfQ5oFm5fhvFjz6A19pump",
+    "buys": 2,
+    "sells": 1,
+    "buyPrice": 0.00032049652643536007,
+    "buyAmount": 11412700,
+    "sellAmount": 11412700,
+    "triggered": false,
+    "timestamp": 1739514073756
   }
 ]

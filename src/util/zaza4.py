@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 # Load dataset from JSON file
-file_path = "/Users/lord_mango/Meme-500/data/initialData.json"  # Update with your file path
+file_path = "/Users/lord_mango/Meme-500/data/secondData.json"  # Update with your file path
 with open(file_path, "r") as f:
     data = json.load(f)
 
