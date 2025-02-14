@@ -248,7 +248,7 @@ async function checkParameters(tokenId, timestamp, mcap, holdingBalance) {
 
       const probability = await executePython([
          roundedMcap,
-         holdingBalance < 100 ? 1 : 0,
+         holdingBalance < 1000 ? 1 : 0,
          candles[0].green,
          candles[1].green,
          candles[2].green,
