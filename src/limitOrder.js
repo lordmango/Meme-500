@@ -32,7 +32,7 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount, t
    if (!boughtPrice) {return}
    
    console.log(`[LimitOrder] Price update ${tokenId}: Live=${livePrice.toFixed(8)}, out_amount=${out_amount.toFixed(2)}, 
-               buy_price=${boughtPrice.toFixed(8)}, buy_price=${takeProfit}`);
+               buy_price=${boughtPrice.toFixed(8)}, take_profit=${takeProfit}`);
    
    // Initialize the token state if not already set
    if (!monitoredTokens.has(tokenId)) {

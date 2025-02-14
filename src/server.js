@@ -92,7 +92,7 @@ app.post('/transaction', async (req, res) => {
 
          if (existingData) {
 
-            if (existingData.triggered) { return }
+            if (existingData.triggered) { return res.status(200).json(defiTxn) }
             let newData = {};
 
             if (existingData.sells > 0) {
@@ -100,13 +100,15 @@ app.post('/transaction', async (req, res) => {
                const roundedTimestamp = Math.round(defiTxn.timestamp);
                let buyExecuted = false;
 
-               const takeProfit = await checkParameters(
+               let takeProfit = await checkParameters(
                   defiTxn.out_token_address,
                   roundedTimestamp,
                   boughtPrice * 1_000_000_000,
                   existingData.buyAmount - existingData.sellAmount,
                   "zaza3.py"
                );
+
+               const takeProfitZaza3 = takeProfit;
 
                if (takeProfit != 0) {
                   priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
@@ -116,7 +118,7 @@ app.post('/transaction', async (req, res) => {
 
                const remainingTime = 59 - (roundedTimestamp % 60)
                setTimeout(async () => {
-                  const takeProfit = await checkParameters(
+                  takeProfit = await checkParameters(
                      defiTxn.out_token_address,
                      roundedTimestamp + remainingTime,
                      boughtPrice * 1_000_000_000,
@@ -124,25 +126,30 @@ app.post('/transaction', async (req, res) => {
                      "zaza4.py"
                   );
                   if (takeProfit !== 0) {
-                     // updateTakeProfit(defiTxn.out_token_address, takeProfit);
-                     
+
                      const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
-                     if(!buyExecuted && takeProfit == 2 && percentageChange < 50) {
+                     
+                     if (buyExecuted == false && takeProfit == 2 && percentageChange < 70) {
                         priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
                         // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
-                     } else if(!buyExecuted && takeProfit == 1.6 && percentageChange < 50) {
+                     } else if (buyExecuted == false && takeProfit == 1.6 && percentageChange < 70) {
                         priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
                         // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
                      }
+
                   }
                }, remainingTime * 1000);
+
+               if (buyExecuted) {priceManager.updateTakeProfit(defiTxn.out_token_address, takeProfit);}
 
                newData = {
                   tokenId: defiTxn.out_token_address,
                   buys: existingData.buys + 1,
                   buyAmount: existingData.buyAmount + defiTxn.out_amount,
+                  buyPrice: boughtPrice,
                   triggered: true,
-                  takeProfit: takeProfit,
+                  zaza3TakeProfit: takeProfitZaza3,
+                  zaza4TakeProfit: takeProfit,
                }
 
             } else {
@@ -162,7 +169,6 @@ app.post('/transaction', async (req, res) => {
                tokenId: defiTxn.out_token_address,
                buys: 1,
                sells: 0,
-               buyPrice: boughtPrice,
                buyAmount: defiTxn.out_amount,
                sellAmount: 0,
                triggered: false,
@@ -177,7 +183,7 @@ app.post('/transaction', async (req, res) => {
 
          if (existingData) {
 
-            if (existingData.triggered) { return }
+            if (existingData.triggered) { return res.status(200).json(defiTxn) }
 
             writeToJson({
                tokenId: defiTxn.in_token_address,
@@ -186,7 +192,7 @@ app.post('/transaction', async (req, res) => {
             }, false)
 
          } else {
-            return;
+            return res.status(200).json(defiTxn);
          }
 
       }
