@@ -82,13 +82,14 @@ app.post('/transaction', async (req, res) => {
    if (!matchingProgramKey) return res.status(200).send("Did not Interact with Dex")
 
    // Process the transaction
-   const defiTxn = processTransaction(txn, walletAddress);
+   const defiTxn = processTransaction(txn, matchingProgramKey, walletAddress);
    if (defiTxn.dex == "Pump.fun") {return res.status(200).json(defiTxn)}
-
+   if (walletAddress === CUPSEY) {console.log(matchingProgramKey + " " + walletAddress)}
    const solPrice = await getPriceData();
    const boughtPrice = ((defiTxn.sol_change - totalFees) / defiTxn.out_amount) * solPrice * 0.975;
 
-   if (defiTxn && defiTxn.wallet_address === CUPSEY) {
+   if (defiTxn && walletAddress === CUPSEY) {
+      console.log(defiTxn)
       if (defiTxn.out_token_address && defiTxn.out_amount > 0) {
 
          const existingData = readFromJson(defiTxn.out_token_address);
@@ -98,6 +99,7 @@ app.post('/transaction', async (req, res) => {
 
             let newData = {};
             if (existingData.sells > 0) {
+
                const buy = checkParameters(
                   defiTxn.out_token_address,
                   defiTxn.timestamp,
@@ -152,8 +154,9 @@ app.post('/transaction', async (req, res) => {
 
          if (existingData) {
             if (existingData.triggered) return;
-            //  priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
-
+            
+            priceManager.addToken(defiTxn.out_token_address, 0, defiTxn.out_amount);
+            
             writeToJson({
                tokenId: defiTxn.in_token_address,
                sellAmount: existingData.sellAmount + defiTxn.in_amount,
@@ -275,7 +278,6 @@ export function processTransaction(tx, programName, walletAddress) {
       tx.meta &&
       tx.meta.err === null
    ) {
-
       const getFilteredBalances = (balances, key, value) =>
          (balances || []).filter(balance => {
             if (key === "owner" && balance.mint === SOL_MINT_ADDRESS) {
@@ -322,6 +324,38 @@ export function processTransaction(tx, programName, walletAddress) {
 
    return null;
 }
+
+function analyzeAccountChanges(changes, direction) {
+   if (direction === "Swap") {
+ 
+     const fromToken = changes.filter(change => parseFloat(change.splAmount) < 0)[0];
+     const toToken = changes.filter(change => parseFloat(change.splAmount) > 0)[0];
+ 
+     return {
+       from: fromToken.splTokenAddress,
+       fromAmount: parseFloat(fromToken.splAmount),
+       to: toToken.splTokenAddress,
+       toAmount: parseFloat(toToken.splAmount),
+     };
+   } else if (direction === "Buy") {
+     return {
+       from: "",
+       fromAmount: 0,
+       to: changes[0].splTokenAddress,
+       toAmount: parseFloat(changes[0].splAmount),
+     };
+   } else if (direction === "Sell") {
+     return {
+       from: changes[0].splTokenAddress,
+       fromAmount: parseFloat(changes[0].splAmount),
+       to: "",
+       toAmount: 0,
+     };
+   } else {
+     return null;
+   }
+ }
+ 
 
 function calculateBalanceChanges(preBalances, postBalances) {
    const [longerBalances, shorterBalances] = preBalances.length >= postBalances.length
