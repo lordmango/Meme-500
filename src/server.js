@@ -111,36 +111,39 @@ app.post('/transaction', async (req, res) => {
                const takeProfitZaza3 = takeProfit;
 
                if (takeProfit != 0) {
-                  priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                  await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
                   //  await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
                   buyExecuted = true;
                }
 
-               const remainingTime = 59 - (roundedTimestamp % 60)
-               setTimeout(async () => {
-                  takeProfit = await checkParameters(
-                     defiTxn.out_token_address,
-                     roundedTimestamp + remainingTime,
-                     boughtPrice * 1_000_000_000,
-                     existingData.buyAmount - existingData.sellAmount,
-                     "zaza4.py"
-                  );
-                  if (takeProfit !== 0) {
+               const remainingTime = 59 - (roundedTimestamp % 60);
 
-                     const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
-                     
-                     if (buyExecuted == false && takeProfit == 2 && percentageChange < 70) {
-                        priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
-                        // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
-                     } else if (buyExecuted == false && takeProfit == 1.6 && percentageChange < 70) {
-                        priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
-                        // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
+               await new Promise((resolve) => {
+                  setTimeout(async () => {
+                     takeProfit = await checkParameters(
+                        defiTxn.out_token_address,
+                        roundedTimestamp + remainingTime,
+                        boughtPrice * 1_000_000_000,
+                        existingData.buyAmount - existingData.sellAmount,
+                        "zaza4.py"
+                     );
+                     if (takeProfit !== 0) {
+
+                        const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
+
+                        if (buyExecuted == false && takeProfit == 2 && percentageChange < 70) {
+                           await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                           // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
+                        } else if (buyExecuted == false && takeProfit == 1.6 && percentageChange < 70) {
+                           await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                           // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE)
+                        }
+
                      }
-
-                  }
-               }, remainingTime * 1000);
-
-               if (buyExecuted) {priceManager.updateTakeProfit(defiTxn.out_token_address, takeProfit);}
+                     if (buyExecuted) { priceManager.updateTakeProfit(defiTxn.out_token_address, takeProfit) }
+                     resolve();
+                  }, remainingTime * 1000);
+               });
 
                newData = {
                   tokenId: defiTxn.out_token_address,
@@ -161,7 +164,7 @@ app.post('/transaction', async (req, res) => {
                }
 
             }
-            writeToJson(newData, false)
+            writeToJson(newData, false);
 
          } else {
 
