@@ -110,8 +110,8 @@ app.post('/transaction', async (req, res) => {
                console.log("First buy time: " + Date.now())
                if (takeProfit != 0) {
                   try {
-                     // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-                     // await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                     await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+                     await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
                   } catch (error) {
                      console.error(`[Server] Buy failed for token ${tokenId}`);
                   } finally {

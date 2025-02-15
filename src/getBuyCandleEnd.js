@@ -35,15 +35,15 @@ export async function getCandleCloseData(remainingTime, boughtPrice, buyExecuted
 
          if (buyExecuted == false && takeProfit == TAKE_PROFIT_100 && percentageChange < 70) {
             try {
-               // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-               // await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+               await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+               await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
             } catch (error) {
                console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
             }
          } else if (buyExecuted == false && takeProfit == TAKE_PROFIT_60 && percentageChange < 25) {
             try {
-               // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-               // await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+               await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+               await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
             } catch (error) {
                console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
             }
