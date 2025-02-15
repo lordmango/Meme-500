@@ -1,54 +1,56 @@
 [
   {
-    "tokenId": "4ZXuNh9hEKcM1FauaYVQtWnfLSnQrHyE651Jsuyypump",
-    "buys": 2,
-    "sells": 6,
-    "buyPrice": 0.0001895422717109824,
-    "buyAmount": 44657194,
-    "sellAmount": 58624072,
-    "triggered": true,
-    "timestamp": 1739563692519,
-    "zaza3TakeProfit": 0,
-    "zaza4TakeProfit": 0
-  },
-  {
-    "tokenId": "2XrLR7WbzC45AgKhSQMXm5fHnB9XKR1UUGUhVeL8pump",
-    "buys": 2,
-    "sells": 8,
-    "buyPrice": 0.000396894269110001,
-    "buyAmount": 14049534,
-    "sellAmount": 14049534,
-    "triggered": false,
-    "timestamp": 1739564440455
-  },
-  {
-    "tokenId": "uL7i77pNZ2ZJx2eN3z3ksGD6nY2Ku6fc2pQngSqpump",
-    "buys": 3,
-    "sells": 1,
-    "buyAmount": 41787398,
-    "sellAmount": 18378726,
-    "triggered": true,
-    "timestamp": 1739566007898,
-    "buyPrice": 0.00010159045115924655,
-    "zaza3TakeProfit": 2,
-    "zaza4TakeProfit": 2
-  },
-  {
-    "tokenId": "4xDYVz8gK3eXLCUQotPW5JHk8NmbeBmqZCsU3sPpBSxY",
+    "tokenId": "4bZkoYKqZjEZcLis1ThbZuag2KDydrZXLZepaG83pump",
     "buys": 2,
     "sells": 1,
-    "buyAmount": 27354980,
-    "sellAmount": 27354980,
+    "buyAmount": 1994764.2,
+    "sellAmount": 1994764.2,
     "triggered": false,
-    "timestamp": 1739566135935
+    "timestamp": 1739577239467
   },
   {
-    "tokenId": "8w9Fe69CiP9THyAgWTrtUFk7cQQMNqkgS3y7caXh4LKm",
-    "buys": 3,
-    "sells": 8,
-    "buyAmount": 22610176,
-    "sellAmount": 22610176,
+    "tokenId": "9zg8aoo5FHhDM5yiLDrTpN61s6mv395N3QdnuRFepump",
+    "buys": 5,
+    "sells": 1,
+    "buyAmount": 22189560,
+    "sellAmount": 22189560,
     "triggered": false,
-    "timestamp": 1739566167313
+    "timestamp": 1739577606420
+  },
+  {
+    "tokenId": "CZyQ11wNEbWC3hyeUV8BLwRuiQb9gbVf5V1bquXEpump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 27199584,
+    "sellAmount": 27199584,
+    "triggered": false,
+    "timestamp": 1739578349325
+  },
+  {
+    "tokenId": "9G8PLyPv6aurVwNksP1ozWWM5M3H3GrYZoSgk4Cipump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 34853930,
+    "sellAmount": 34853930,
+    "triggered": false,
+    "timestamp": 1739579889741
+  },
+  {
+    "tokenId": "CReeE4fCodA41sqDsD5S9QCqs1X3bvvtbi7nE7Hspump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 24550456,
+    "sellAmount": 24550456,
+    "triggered": false,
+    "timestamp": 1739580312129
+  },
+  {
+    "tokenId": "3vD5SD6VUKaqGbEz2BvVDo4fh9JwzoA2v6io9iJ2pump",
+    "buys": 1,
+    "sells": 0,
+    "buyAmount": 43805396,
+    "sellAmount": 0,
+    "triggered": false,
+    "timestamp": 1739581211646
   }
 ]

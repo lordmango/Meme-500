@@ -1,7 +1,7 @@
 import priceManager from './priceManager.js';
 import { swapTokens } from './swapToken.js';
 
-const INPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
+const OUTPUT_MINT = "So11111111111111111111111111111111111111112"; // Example: SOL
 const SELL_PRIORITY_FEE = 8000000; // Priority fee in lamports
 const SELL_MIN_BPS = 500; // Min slippage
 const SELL_MAX_BPS = 1000; // Max slippage
@@ -70,10 +70,10 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount, t
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       try {
-         // await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-         // await swapTokens(tokenId, INPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
       } catch (error) {
-         console.error(`[LimitOrder] Swap failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
+         console.error(`[LimitOrder] Sell failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       } finally {
          priceManager.removeToken(tokenId); // Stop tracking the token
          removeMonitoredTokens(tokenId); // Clean up local state
