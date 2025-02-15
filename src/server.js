@@ -5,7 +5,7 @@ import { executePython } from './util/marwan.js';
 import fs from 'fs'
 import { readFromJson, writeToJson, removeFromJson } from './util/data.js';
 import { swapTokens } from './swapToken.js';
-import { take } from 'puppeteer-core/lib/esm/third_party/rxjs/rxjs.js';
+import { getCandleCloseData } from './getBuyCandleEnd.js';
 
 const VALID_PROGRAM_IDS = {
    "Raydium": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
@@ -32,9 +32,6 @@ const FILE_PATH = 'data/cache.json';
 const TOTAL_FEES = .016 // photon
 const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
-
-let pairID = '';
-let livePrice = 0;
 
 const app = express();
 
@@ -85,7 +82,7 @@ app.post('/transaction', async (req, res) => {
    const solPrice = await getPriceData();
    const boughtPrice = ((defiTxn.sol_change - TOTAL_FEES) / defiTxn.out_amount) * solPrice * 0.975;
 
-   if (defiTxn && walletAddress === CUPSEY) {      // buy
+   if (defiTxn && walletAddress == CUPSEY) {      // buy
 
       console.log(defiTxn)
 
@@ -110,13 +107,11 @@ app.post('/transaction', async (req, res) => {
                   existingData.buyAmount - existingData.sellAmount,
                   "zaza3.py"
                );
-
-               const takeProfitZaza3 = takeProfit;
-
+               console.log("First buy time: " + Date.now())
                if (takeProfit != 0) {
                   try {
-                     await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-                     await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
+                     // await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+                     // await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
                   } catch (error) {
                      console.error(`[Server] Buy failed for token ${tokenId}`);
                   } finally {
@@ -125,41 +120,8 @@ app.post('/transaction', async (req, res) => {
                }
 
                const remainingTime = 59 - (roundedTimestamp % 60);
-
-               await new Promise((resolve) => {
-                  setTimeout(async () => {
-                     takeProfit = await checkParameters(
-                        defiTxn.out_token_address,
-                        roundedTimestamp + remainingTime,
-                        boughtPrice * 1_000_000_000,
-                        existingData.buyAmount - existingData.sellAmount,
-                        "zaza4.py"
-                     );
-                     if (takeProfit !== 0) {
-
-                        const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
-
-                        if (buyExecuted == false && takeProfit == TAKE_PROFIT_100 && percentageChange < 70) {
-                           try {
-                              await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-                              await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
-                           } catch (error) {
-                              console.error(`[Server] Buy failed for token ${tokenId}`);
-                           }
-                        } else if (buyExecuted == false && takeProfit == TAKE_PROFIT_60 && percentageChange < 25) {
-                           try {
-                              await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-                              await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
-                           } catch (error) {
-                              console.error(`[Server] Buy failed for token ${tokenId}`);
-                           }
-                        }
-
-                     }
-                     if (buyExecuted) { priceManager.updateTakeProfit(defiTxn.out_token_address, takeProfit) }
-                     resolve();
-                  }, remainingTime * 1000);
-               });
+               console.log("Remaining Time: " + remainingTime)
+               getCandleCloseData(remainingTime, boughtPrice, buyExecuted, roundedTimestamp, defiTxn, existingData);
 
                newData = {
                   tokenId: defiTxn.out_token_address,
@@ -167,8 +129,7 @@ app.post('/transaction', async (req, res) => {
                   buyAmount: existingData.buyAmount + defiTxn.out_amount,
                   buyPrice: boughtPrice,
                   triggered: true,
-                  zaza3TakeProfit: takeProfitZaza3,
-                  zaza4TakeProfit: takeProfit,
+                  zaza3TakeProfit: takeProfit,
                }
 
             } else {
@@ -219,7 +180,7 @@ app.post('/transaction', async (req, res) => {
       return res.status(200).json(defiTxn);
    }
 
-   res.status(200).send('No significant changes detected.');
+   return res.status(200).send('No significant changes detected.');
 });
 
 // Start the server
@@ -232,7 +193,7 @@ app.listen(PORT, () => {
 
 // checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
-async function checkParameters(tokenId, timestamp, mcap, holdingBalance, fileName) {
+export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, fileName) {
 
    const roundedMcap = Math.round(mcap);
 
@@ -293,8 +254,8 @@ async function checkParameters(tokenId, timestamp, mcap, holdingBalance, fileNam
 
       while (candles.length < 3) {
          candles.push({
-            volume: candles[0]?.volume || 0,
-            green: candles[0]?.green || 0
+            volume: candles[1]?.volume || 0,
+            green: candles[1]?.green || 0
          });
       }
 
@@ -332,10 +293,6 @@ async function checkParameters(tokenId, timestamp, mcap, holdingBalance, fileNam
 
 export function setPairID(pairIDFromPriceManager) {
    pairID = pairIDFromPriceManager;
-}
-
-export function updateLivePrice(livePriceFromPriceManager) {
-   livePrice = livePriceFromPriceManager;
 }
 
 export function processTransaction(tx, programName, walletAddress) {

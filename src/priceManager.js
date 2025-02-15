@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
-import { setPairID, updateLivePrice } from './server.js';
+import { updateLivePriceSecondCandle } from './getBuyCandleEnd.js';
 
 const fetchPrice = async (page, tokenId) => {
    try {
@@ -123,7 +123,7 @@ class PriceManager {
          if (newPrice !== null && newPrice !== tokenData.livePrice) {
             tokenData.livePrice = newPrice; // Update live price in memory
             await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount, tokenData.takeProfit);
-            updateLivePrice(newPrice);
+            updateLivePriceSecondCandle(newPrice);
          }
 
          await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 1 second before checking again
