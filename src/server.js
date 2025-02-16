@@ -24,7 +24,7 @@ const PRIORITY_FEE = 8000000; // Priority fee in lamports
 const MIN_BPS = 1000;      // Min slippage
 const MAX_BPS = 1500;      // Max slippage
 const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
-const SOL_AMOUNT = 400;         // 1000 = 1 Sol
+const SOL_AMOUNT = 200;         // 1000 = 1 Sol
 
 const CUPSEY = 'suqh5sHtr8HyJ7q8scBimULPkPpA557prMG47xCHQfK'
 const THREE_HOURS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
@@ -32,6 +32,8 @@ const FILE_PATH = 'data/cache.json';
 const TOTAL_FEES = .016 // photon
 const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
+
+let newData = {};
 
 const app = express();
 
@@ -93,9 +95,17 @@ app.post('/transaction', async (req, res) => {
          if (existingData) {
 
             if (existingData.triggered) { return res.status(200).json(defiTxn) }
-            let newData = {};
 
             if (existingData.sells > 0) {
+
+               newData = {
+                  tokenId: defiTxn.out_token_address,
+                  buys: existingData.buys + 1,
+                  buyAmount: existingData.buyAmount + defiTxn.out_amount,
+                  buyPrice: boughtPrice,
+                  triggered: true,
+               }
+               writeToJson(newData, false);
 
                const roundedTimestamp = Math.round(defiTxn.timestamp);
                let buyExecuted = false;
@@ -127,10 +137,6 @@ app.post('/transaction', async (req, res) => {
 
                newData = {
                   tokenId: defiTxn.out_token_address,
-                  buys: existingData.buys + 1,
-                  buyAmount: existingData.buyAmount + defiTxn.out_amount,
-                  buyPrice: boughtPrice,
-                  triggered: true,
                   zaza3TakeProfit: takeProfit,
                }
 
@@ -143,8 +149,9 @@ app.post('/transaction', async (req, res) => {
                }
 
             }
-            writeToJson(newData, false);
 
+            writeToJson(newData, false);
+            
          } else {
 
             writeToJson({

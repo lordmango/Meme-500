@@ -13,7 +13,9 @@ const SOL_AMOUNT = 400;         // 1000 = 1 Sol
 
 const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
+
 let livePrice = 0;
+let newData = {};
 
 
 export async function getCandleCloseData(remainingTime, boughtPrice, buyExecuted, roundedTimestamp, defiTxn, existingData) {

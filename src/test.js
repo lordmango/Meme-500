@@ -56,9 +56,11 @@ async function fetchAndPrintData(tokenId, timeStamp, roundedMcap) {
 
        console.log("Processed Candles:", candles);
 
-       const probability = await executePython([
+       const probability = await executePython(
+         "zaza3.py",
+         [
            roundedMcap,
-           0,
+           1,
            candles[0].green,
            candles[1].green,
            candles[2].green,
