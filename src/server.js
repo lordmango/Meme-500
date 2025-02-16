@@ -5,7 +5,7 @@ import { executePython } from './util/marwan.js';
 import fs from 'fs'
 import { readFromJson, writeToJson, removeFromJson } from './util/data.js';
 import { swapTokens } from './swapToken.js';
-import { getCandleCloseData } from './getBuyCandleEnd.js';
+import { getCandleCloseData } from './candleCloseData.js';
 
 const VALID_PROGRAM_IDS = {
    "Raydium": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
@@ -151,7 +151,7 @@ app.post('/transaction', async (req, res) => {
             }
 
             writeToJson(newData, false);
-            
+
          } else {
 
             writeToJson({

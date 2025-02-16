@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
-import { updateLivePriceSecondCandle } from './getBuyCandleEnd.js';
+import { updateLivePriceSecondCandle } from './candleCloseData.js';
 
 const fetchPrice = async (page, tokenId) => {
    try {
