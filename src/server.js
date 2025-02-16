@@ -1,7 +1,7 @@
 import express from 'express';
 import { readFromJson, writeToJson, removeFromJson } from './util/data.js';
 import { removeMonitoredTokens } from './limitOrder.js';
-import { getCandleData } from './initialCandleData.js'
+import { getCandleData } from './secondWave.js'
 import fs from 'fs'
 
 const VALID_PROGRAM_IDS = {
