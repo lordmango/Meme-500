@@ -95,56 +95,20 @@ app.post('/transaction', async (req, res) => {
                   triggered: true,
                }
                writeToJson(newData, false);
-
+               
                getCandleData(boughtPrice, defiTxn, existingData);
 
-               // const roundedTimestamp = Math.round(defiTxn.timestamp);
-               // let buyExecuted = false;
-
-               // let takeProfit = await checkParameters(
-               //    defiTxn.out_token_address,
-               //    roundedTimestamp,
-               //    boughtPrice * 1_000_000_000,
-               //    existingData.buyAmount - existingData.sellAmount,
-               //    "zaza3.py"
-               // );
-
-               // console.log("First buy time: " + Date.now())
-               
-               // if (takeProfit != 0) {
-               //    try {
-               //       await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-               //       await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, takeProfit);
-               //    } catch (error) {
-               //       console.error(`[Server] Buy failed for token ${tokenId}`);
-               //    } finally {
-               //       buyExecuted = true;
-               //    }
-               // }
-
-               // const remainingTime = 59 - (roundedTimestamp % 60);
-               // console.log("Remaining Time: " + remainingTime)
-               // getCandleCloseData(remainingTime, boughtPrice, buyExecuted, roundedTimestamp, defiTxn, existingData);
-
-               // newData = {
-               //    tokenId: defiTxn.out_token_address,
-               //    zaza3TakeProfit: takeProfit,
-               // }
-
             } else {
-
                newData = {
                   tokenId: defiTxn.out_token_address,
                   buys: existingData.buys + 1,
                   buyAmount: existingData.buyAmount + defiTxn.out_amount
                }
-
             }
 
             writeToJson(newData, false);
 
          } else {
-
             writeToJson({
                tokenId: defiTxn.out_token_address,
                buys: 1,
@@ -154,7 +118,6 @@ app.post('/transaction', async (req, res) => {
                triggered: false,
                timestamp: Date.now()
             })
-
          }
 
       } else if (defiTxn.in_token_address && defiTxn.in_amount > 0) {      // sell
@@ -188,6 +151,7 @@ const PORT = process.env.PORT || 3030;
 app.listen(PORT, () => {
    console.log(`Server is running on port ${PORT}`);
 });
+
 
 // Helper functions
 
