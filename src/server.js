@@ -107,7 +107,9 @@ app.post('/transaction', async (req, res) => {
                   existingData.buyAmount - existingData.sellAmount,
                   "zaza3.py"
                );
+
                console.log("First buy time: " + Date.now())
+               
                if (takeProfit != 0) {
                   try {
                      await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);

@@ -21,6 +21,7 @@ export async function getCandleCloseData(remainingTime, boughtPrice, buyExecuted
    
    setTimeout(async () => {
       console.log("Inside: " + Date.now())
+      
       let takeProfit = await checkParameters(
          defiTxn.out_token_address,
          roundedTimestamp + remainingTime,
