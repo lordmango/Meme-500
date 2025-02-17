@@ -8,13 +8,14 @@ const PRIORITY_FEE = 8000000; // Priority fee in lamports
 const MIN_BPS = 1000;      // Min slippage
 const MAX_BPS = 1500;      // Max slippage
 const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
-const SOL_AMOUNT = 400;         // 1000 = 1 Sol
+const SOL_AMOUNT = 200;         // 1000 = 1 Sol
 
 const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
 
-let livePrice = 0;
 let newData = {};
+let percentageChange = 0;
+let precentLimit = 0;
 
 export async function getCandleData(boughtPrice, defiTxn, existingData) {
    const roundedTimestamp = Math.round(defiTxn.timestamp);
@@ -31,18 +32,29 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
    console.log("First buy time: " + Date.now())
    
    if (initialTakeProfit != 0) {
+      
+      if (initialTakeProfit == TAKE_PROFIT_100) {
+         precentLimit = 70;
+      } else {
+         precentLimit = 25;
+      }
+      
       try {
-         await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-         await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
+         let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+         if (txid == null && percentageChange < precentLimit) {
+            txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+         }
+         if (txid) { 
+            buyExecuted = true;
+            await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
+         }
       } catch (error) {
          console.error(`[Server] Buy failed for token ${tokenId}`);
-      } finally {
-         buyExecuted = true;
       }
+   
    }
 
    const remainingTime = 59 - (roundedTimestamp % 60);
-   console.log("Remaining Time: " + remainingTime)
    
    setTimeout(async () => {
       console.log("Inside: " + Date.now())
@@ -55,28 +67,33 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
          "zaza4.py"
       );
       
-      if (updatedTakeProfit !== 0) {
+      if (updatedTakeProfit !== 0 && buyExecuted == false) {
+      
+         if (updatedTakeProfit == TAKE_PROFIT_100) {
+            precentLimit = 70;
+         } else {
+            precentLimit = 25;
+         }
 
-         const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
-
-         if (buyExecuted == false && updatedTakeProfit == TAKE_PROFIT_100 && percentageChange < 70) {
+         if (percentageChange < precentLimit) {
+            
             try {
-               await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-               await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
+               let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+               if (txid == null && percentageChange < precentLimit) {
+                  txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+               }
+               if (txid) { 
+                  await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
+               }
             } catch (error) {
                console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
             }
-         } else if (buyExecuted == false && updatedTakeProfit == TAKE_PROFIT_60 && percentageChange < 25) {
-            try {
-               await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
-               await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
-            } catch (error) {
-               console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
-            }
+         
          }
 
       }
-      if (buyExecuted) { priceManager.updateTakeProfit(defiTxn.out_token_address, initialTakeProfit) }
+      
+      if (buyExecuted && updatedTakeProfit !== 0) { priceManager.updateTakeProfit(defiTxn.out_token_address, updatedTakeProfit) }
 
       newData = {
          tokenId: defiTxn.out_token_address,
@@ -89,8 +106,6 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
 
    }, remainingTime * 1000);
 }
-
-// checkParameters("Vy8Tau21KkrEhuk9978YY2AGKqnv1BaCh9yKpbAGGFM", 1739398394, 387000)
 
 export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, fileName) {
 
@@ -191,7 +206,7 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
 }
 
 export function updateLivePrice(livePriceFromPriceManager) {
-   livePrice = livePriceFromPriceManager;
+   percentageChange = ((livePriceFromPriceManager - boughtPrice) / boughtPrice) * 100;
 }
 
 export function setPairID(pairIDFromPriceManager) {

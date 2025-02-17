@@ -1,5 +1,4 @@
 import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
-import { processTransaction } from './server.js';
 import fetch from 'cross-fetch';
 import bs58 from 'bs58';
 import dotenv from 'dotenv';
@@ -56,20 +55,19 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
 
         const txid = await connection.sendRawTransaction(rawTransaction, {
             skipPreflight: false,
-            preflightCommitment: 'confirmed', // Use a valid commitment level
-            maxRetries: 3,
+            preflightCommitment: 'confirmed',
+            maxRetries: 2,
         });
-        console.log(`[SwapToken] Swap successfull: https://solscan.io/tx/${txid}`);
 
-      //   const latestBlockhash = await connection.getLatestBlockhash();
-      //   await connection.confirmTransaction(
-      //       {
-      //           signature: txid,
-      //           blockhash: latestBlockhash.blockhash,
-      //           lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-      //       },
-      //       "confirmed"
-      //   );
+        const txResult = await connection.getTransaction(txid, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
+
+        if (txResult && txResult.meta && !txResult.meta.err) {
+            console.log(`[SwapToken] Swap succeeded: https://solscan.io/tx/${txid}`);
+            return txid; // Transaction succeeded
+        } else {
+            console.error("[SwapToken] Swap failed on-chain.");
+            return null; // Transaction failed
+        }
 
     } catch (error) {
         console.error("[SwapToken] Failed to Swap token", error.message);
@@ -80,6 +78,6 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         } else {
             console.error("[SellToken] No logs available.");
         }
-        return 0;
+        return null;
     }
 }

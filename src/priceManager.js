@@ -126,7 +126,7 @@ class PriceManager {
             updateLivePrice(newPrice);
          }
 
-         await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 1 second before checking again
+         await new Promise((resolve) => setTimeout(resolve, 250));
       }
    }
 }

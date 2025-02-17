@@ -70,8 +70,10 @@ export async function priceUpdate(tokenId, livePrice, boughtPrice, out_amount, t
       const percentageChange = ((livePrice - boughtPrice) / boughtPrice) * 100;
       console.log(`[LimitOrder] Selling token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       try {
-         await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
-         await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         let txid = await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         if (txid == null) {
+            await swapTokens(tokenId, OUTPUT_MINT, Math.floor(out_amount), SELL_PRIORITY_FEE, SELL_MIN_BPS, SELL_MAX_BPS, QUOTE_SLIPPAGE);
+         }
       } catch (error) {
          console.error(`[LimitOrder] Sell failed for token ${tokenId} at ${percentageChange.toFixed(2)}% change`);
       } finally {

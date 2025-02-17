@@ -112,5 +112,44 @@
     "buyPrice": 0.00002350179880562003,
     "zaza3TakeProfit": 0,
     "zaza4TakeProfit": 0
+  },
+  {
+    "tokenId": "31RvtpGGVnwprWsjFHqad6rjN8sa82YP9VDkXBATpump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 195003580,
+    "sellAmount": 195003580,
+    "triggered": false,
+    "timestamp": 1739757775472
+  },
+  {
+    "tokenId": "67NJJtitBiYBXHqq5qmWvZB7RA5iHdDN3931svwtpump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 5920480.5,
+    "sellAmount": 5920480.5,
+    "triggered": false,
+    "timestamp": 1739758005170
+  },
+  {
+    "tokenId": "8BdHtHE6VWShPgCgvxggqxEJCXAvctLzmd326wDTpump",
+    "buys": 2,
+    "sells": 2,
+    "buyAmount": 35833183,
+    "sellAmount": 10941897,
+    "triggered": true,
+    "timestamp": 1739758218819,
+    "buyPrice": 0.00017147002562638877,
+    "zaza3TakeProfit": 0,
+    "zaza4TakeProfit": 0
+  },
+  {
+    "tokenId": "2LNiZY9MyYYirUbJe14ShbkJ6ZkVyMEUkHcAZMpYpump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 13622090,
+    "sellAmount": 13622090,
+    "triggered": false,
+    "timestamp": 1739759578752
   }
 ]
