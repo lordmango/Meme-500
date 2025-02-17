@@ -28,8 +28,6 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       existingData.buyAmount - existingData.sellAmount,
       "zaza3.py"
    );
-
-   console.log("First buy time: " + Date.now())
    
    if (initialTakeProfit != 0) {
       
@@ -40,13 +38,17 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       }
       
       try {
+         console.log("First buy start: " + Date.now())
          let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
          if (txid == null && percentageChange < precentLimit) {
+            console.log("First buy retry: " + Date.now())
             txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
          }
          if (txid) { 
+            console.log("First buy end: " + Date.now())
             buyExecuted = true;
             await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
+            console.log("First buy add token finish: " + Date.now())
          }
       } catch (error) {
          console.error(`[Server] Buy failed for token ${tokenId}`);
@@ -78,12 +80,16 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
          if (percentageChange < precentLimit) {
             
             try {
+               console.log("Second buy start: " + Date.now())
                let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
                if (txid == null && percentageChange < precentLimit) {
+                  console.log("Second buy retry: " + Date.now())
                   txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
                }
                if (txid) { 
+                  console.log("Second buy end: " + Date.now())
                   await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
+                  console.log("Second buy add token finish: " + Date.now())
                }
             } catch (error) {
                console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
