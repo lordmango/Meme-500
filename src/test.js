@@ -49,8 +49,8 @@ async function fetchAndPrintData(tokenId, timeStamp, roundedMcap) {
 
        while (candles.length < 3) {
            candles.push({
-               volume: candles[0]?.volume || 0,
-               green: candles[0]?.green || 0
+               volume: candles[1]?.volume || 0,
+               green: candles[1]?.green || 0
            });
        }
 
@@ -60,7 +60,7 @@ async function fetchAndPrintData(tokenId, timeStamp, roundedMcap) {
          "zaza3.py",
          [
            roundedMcap,
-           1,
+           0,
            candles[0].green,
            candles[1].green,
            candles[2].green,
@@ -87,9 +87,9 @@ async function fetchAndPrintData(tokenId, timeStamp, roundedMcap) {
 
 // Test function
 (async () => {
-    const tokenId = "Sa7mxdXXRk7SgaPyvK5nCpYtSFgdvQNucDA4w8bpump";
-    const timeStamp = 1739507568;
-    const roundedMcap = 538148;
+    const tokenId = "FB1t7X8wryQuwiK8WcEjL82weadaYEkgAaZysQibpump";
+    const timeStamp = 1739751599;
+    const roundedMcap = 21000;
     const result = await fetchAndPrintData(tokenId, timeStamp, roundedMcap);
     console.log("Final Result:", result);
 })();

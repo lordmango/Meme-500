@@ -34,5 +34,83 @@
     "sellAmount": 26961664,
     "triggered": false,
     "timestamp": 1739737976217
+  },
+  {
+    "tokenId": "Ek4NDJkEkoFASRBTusitMdDpMs8syAQDeUML4Fmvpump",
+    "buys": 1,
+    "sells": 1,
+    "buyAmount": 18256430,
+    "sellAmount": 46786256,
+    "triggered": false,
+    "timestamp": 1739741837096
+  },
+  {
+    "tokenId": "5ppQUiD3ccx3ST268n8VgYyBtSWiPy5isAeeWyFvpump",
+    "buys": 1,
+    "sells": 2,
+    "buyAmount": 13542842,
+    "sellAmount": 13542842,
+    "triggered": false,
+    "timestamp": 1739742953943
+  },
+  {
+    "tokenId": "HaSwtV5pSUGFWbzNGR7e8eoVVN7EL21s2SgPHMxgpump",
+    "buys": 1,
+    "sells": 2,
+    "buyAmount": 15173919,
+    "sellAmount": 15173919,
+    "triggered": false,
+    "timestamp": 1739745456572
+  },
+  {
+    "tokenId": "8vsX8tW9tKkJ8927KmBx9JW1dbQpTC5P7HXzmChiJdV7",
+    "buys": 2,
+    "sells": 2,
+    "buyAmount": 2852809.8,
+    "sellAmount": 2852809.8,
+    "triggered": false,
+    "timestamp": 1739745970779
+  },
+  {
+    "tokenId": "8v7ZushvA6MneiSrYfV9gJnyCAXKFvd16fJb9qVspump",
+    "buys": 2,
+    "sells": 5,
+    "buyAmount": 3986715,
+    "sellAmount": 3986715,
+    "triggered": false,
+    "timestamp": 1739746413097
+  },
+  {
+    "tokenId": "2BuXJDuA8dnqUpytSpnyxNy9ymuchZFbWxFcsRgFpump",
+    "buys": 3,
+    "sells": 4,
+    "buyAmount": 11481787,
+    "sellAmount": 11481787,
+    "triggered": false,
+    "timestamp": 1739746622704
+  },
+  {
+    "tokenId": "BUgzTCbKHUXmbyX3FQhoih5o2U84ePKreLgYXQShpump",
+    "buys": 2,
+    "sells": 1,
+    "buyAmount": 38068764,
+    "sellAmount": 8568618,
+    "triggered": true,
+    "timestamp": 1739748608829,
+    "buyPrice": 0.00005411565312543311,
+    "zaza3TakeProfit": 0,
+    "zaza4TakeProfit": 0
+  },
+  {
+    "tokenId": "FB1t7X8wryQuwiK8WcEjL82weadaYEkgAaZysQibpump",
+    "buys": 2,
+    "sells": 1,
+    "buyAmount": 17410508,
+    "sellAmount": 11331574,
+    "triggered": true,
+    "timestamp": 1739751544060,
+    "buyPrice": 0.00002350179880562003,
+    "zaza3TakeProfit": 0,
+    "zaza4TakeProfit": 0
   }
 ]
