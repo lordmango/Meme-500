@@ -167,9 +167,9 @@
   {
     "tokenId": "GnDfrXWPs71J73CrfrNsuwPrR15Fu7oZfNxYRhHWpump",
     "buys": 1,
-    "sells": 0,
+    "sells": 1,
     "buyAmount": 12479585,
-    "sellAmount": 0,
+    "sellAmount": 12479585,
     "triggered": false,
     "timestamp": 1739764840903
   },
@@ -181,5 +181,17 @@
     "sellAmount": 30147410,
     "triggered": false,
     "timestamp": 1739765830251
+  },
+  {
+    "tokenId": "FaTQk2ctPWvXcrcXFeMVaGnWem8V8gfH6rgBtLWYpump",
+    "buys": 2,
+    "sells": 9,
+    "buyAmount": 8178188,
+    "sellAmount": 13796098,
+    "triggered": true,
+    "timestamp": 1739766712585,
+    "buyPrice": 0.00029768897929566507,
+    "zaza3TakeProfit": 0,
+    "zaza4TakeProfit": 0
   }
 ]

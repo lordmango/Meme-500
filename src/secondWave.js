@@ -185,7 +185,7 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
          fileName,
          [
             roundedMcap,
-            holdingBalance < 1000 ? 1 : 0,
+            holdingBalance >= 0 && holdingBalance < 1000 ? 1 : 0,
             candles[0].green,
             candles[1].green,
             candles[2].green,
