@@ -21,6 +21,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
    const roundedTimestamp = Math.round(defiTxn.timestamp);
    let buyExecuted = false;
    let secondBuyExecuted = false;
+   let addTokenCalled = false;
 
    let initialTakeProfit = await checkParameters(
       defiTxn.out_token_address,
@@ -33,6 +34,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
    if (initialTakeProfit !== 0) {
 
       priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
+      addTokenCalled = true;
       
       if (initialTakeProfit == TAKE_PROFIT_100) {
          precentLimit = 60;
@@ -71,6 +73,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       if (updatedTakeProfit !== 0 && buyExecuted == false) {
 
          priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
+         addTokenCalled = true;
       
          if (updatedTakeProfit == TAKE_PROFIT_100) {
             precentLimit = 60;
@@ -101,7 +104,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
 
       if (buyExecuted && updatedTakeProfit !== 0) { priceManager.updateTakeProfit(defiTxn.out_token_address, updatedTakeProfit) }
 
-      if (buyExecuted == false && secondBuyExecuted == false) { priceManager.removeToken(tokenId) }
+      if (addTokenCalled && buyExecuted == false && secondBuyExecuted == false) { priceManager.removeToken(tokenId) }
 
       newData = {
          tokenId: defiTxn.out_token_address,
