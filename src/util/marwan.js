@@ -24,11 +24,11 @@ export function executePython(scriptName, inputValues) {
         });
 
         pythonProcess.on("close", (code) => {
-            console.log(`Python script exited with code ${code}`);
+            // console.log(`Python script exited with code ${code}`);
 
             if (code === 0) {
                 const [prob06, prob1] = outputData.split(" ").map(parseFloat);
-                console.log("Predicted Probabilities:", { prob06, prob1 });
+               //  console.log("Predicted Probabilities:", { prob06, prob1 });
                 resolve({ prob06, prob1 }); // Return both probabilities
             } else {
                 reject(new Error(`Python script exited with code ${code}`));

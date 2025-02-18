@@ -526,5 +526,17 @@
     "sellAmount": 48132824,
     "triggered": false,
     "timestamp": 1739849794181
+  },
+  {
+    "tokenId": "AisSAUjP15GaYbNpbz1s3bZE4PQtARHLtefKqh7Dpump",
+    "buys": 2,
+    "sells": 2,
+    "buyAmount": 28601363,
+    "sellAmount": 15661481,
+    "triggered": true,
+    "timestamp": 1739850888799,
+    "buyPrice": 0.0002689230001627292,
+    "zaza3TakeProfit": 1.6,
+    "zaza4TakeProfit": 1.6
   }
 ]

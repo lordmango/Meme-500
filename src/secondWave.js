@@ -30,7 +30,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       "zaza3.py"
    );
    
-   if (initialTakeProfit != 0) {
+   if (initialTakeProfit !== 0) {
 
       priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
       
@@ -156,7 +156,7 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
          return 0;
       }
 
-      console.log("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
+      // console.log("GeckoTerminal API Response:", JSON.stringify(ohlcvData, null, 2));
 
       if (!ohlcvData.data || !ohlcvData.data.attributes || !ohlcvData.data.attributes.ohlcv_list) {
          console.error("Invalid OHLCV API response structure.");
@@ -181,7 +181,7 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
          });
       }
 
-      console.log("Processed Candles:", candles);
+      // console.log("Processed Candles:", candles);
 
       const probability = await executePython(
          fileName,
