@@ -32,7 +32,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
    if (initialTakeProfit != 0) {
       
       if (initialTakeProfit == TAKE_PROFIT_100) {
-         precentLimit = 70;
+         precentLimit = 50;
       } else {
          precentLimit = 25;
       }
@@ -72,7 +72,7 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       if (updatedTakeProfit !== 0 && buyExecuted == false) {
       
          if (updatedTakeProfit == TAKE_PROFIT_100) {
-            precentLimit = 70;
+            precentLimit = 50;
          } else {
             precentLimit = 25;
          }
