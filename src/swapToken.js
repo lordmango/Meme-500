@@ -56,10 +56,10 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
         const txid = await connection.sendRawTransaction(rawTransaction, {
             skipPreflight: false,
             preflightCommitment: 'confirmed',
-            maxRetries: 2,
+            maxRetries: 3,
         });
 
-        const txResult = await connection.getTransaction(txid, { commitment: "finalized", maxSupportedTransactionVersion: 0 });
+        const txResult = await fetchTransactionWithRetry(txid);
 
         if (txResult && txResult.meta && !txResult.meta.err) {
             console.log(`[SwapToken] Swap succeeded: https://solscan.io/tx/${txid}`);
@@ -76,8 +76,27 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
             // console.error("[SellToken] Transaction logs:");
             // error.logs.forEach((log) => console.error(log));
         } else {
-            console.error("[SellToken] No logs available.");
+            console.error("[SwapToken] No logs available.");
         }
         return null;
     }
+}
+
+async function fetchTransactionWithRetry(txid, retries = 4, delay = 1000) {
+    for (let i = 0; i <= retries; i++) {
+        await new Promise((resolve) => setTimeout(resolve, delay)); // Wait before retrying
+
+        console.log(`[SwapToken] Attempt ${i + 1}: Fetching transaction ${txid}...`);
+        const txn = await connection.getParsedTransaction(txid, {
+            maxSupportedTransactionVersion: 0,
+            commitment: "confirmed",
+        });
+
+        if (txn) {
+            return txn;
+        }
+    }
+
+    console.error("[SwapToken] Transaction not found after retries.");
+    return null;
 }
