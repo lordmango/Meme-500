@@ -61,7 +61,7 @@ export async function swapTokens(inputMint, outputMint, amount, priorityFee, min
 
         const txResult = await fetchTransactionWithRetry(txid);
 
-        if (txResult && txResult.meta && !txResult.meta.err) {
+        if (txResult) {
             console.log(`[SwapToken] Swap succeeded: https://solscan.io/tx/${txid}`);
             return txid; // Transaction succeeded
         } else {
@@ -92,7 +92,7 @@ async function fetchTransactionWithRetry(txid, retries = 4, delay = 1000) {
             commitment: "confirmed",
         });
 
-        if (txn) {
+        if (txn && txn.meta && !txn.meta.err) {
             return txn;
         }
     }
