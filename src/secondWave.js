@@ -20,6 +20,8 @@ let precentLimit = 0;
 export async function getCandleData(boughtPrice, defiTxn, existingData) {
    const roundedTimestamp = Math.round(defiTxn.timestamp);
    let buyExecuted = false;
+   const price = await fetchTokenPrice(defiTxn.out_token_address)
+   percentageChange = ((price - boughtPrice) / boughtPrice) * 100;
 
    let initialTakeProfit = await checkParameters(
       defiTxn.out_token_address,
@@ -209,6 +211,14 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
       console.error("Error in checkParameters:", error);
       return 0;
    }
+}
+
+async function fetchTokenPrice(token) {
+   const response = await fetch('https://api.jup.ag/price/v2?ids='+ token, {
+      method: "GET"
+   });
+   const data = await response.json()
+   return data.data[token].price;
 }
 
 export function updateLivePrice(livePriceFromPriceManager) {
