@@ -8,7 +8,7 @@ const PRIORITY_FEE = 8000000; // Priority fee in lamports
 const MIN_BPS = 1000;      // Min slippage
 const MAX_BPS = 1500;      // Max slippage
 const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
-const SOL_AMOUNT = 200;         // 1000 = 1 Sol
+const SOL_AMOUNT = 100;         // 1000 = 1 Sol
 
 const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
