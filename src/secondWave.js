@@ -14,7 +14,7 @@ const TAKE_PROFIT_100 = 1.8;
 const TAKE_PROFIT_60 = 1.5;
 
 let newData = {};
-let percentageChange = 0;
+let percentageChange = 100;
 let precentLimit = 0;
 
 export async function getCandleData(boughtPrice, defiTxn, existingData) {
