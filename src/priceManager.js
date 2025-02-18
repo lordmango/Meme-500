@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer';
 import { priceUpdate } from './limitOrder.js';
-import { updateLivePrice } from './secondWave.js';
 
 const fetchPrice = async (page, tokenId) => {
    try {
@@ -72,7 +71,7 @@ class PriceManager {
       // Initialize the browser if not already running
       if (!this.browser) {
          this.browser = await puppeteer.launch({ headless: true });
-         console.log('[PriceManager] Browser initialized');
+         // console.log('[PriceManager] Browser initialized');
       }
 
       // Create a new tab for the token
@@ -106,7 +105,7 @@ class PriceManager {
       if (this.tokens.size === 0 && this.browser) {
          await this.browser.close();
          this.browser = null;
-         console.log('[PriceManager] Browser closed');
+         // console.log('[PriceManager] Browser closed');
       }
    }
 
@@ -123,7 +122,6 @@ class PriceManager {
          if (newPrice !== null && newPrice !== tokenData.livePrice) {
             tokenData.livePrice = newPrice; // Update live price in memory
             await priceUpdate(tokenId, newPrice, tokenData.boughtPrice, tokenData.out_amount, tokenData.takeProfit);
-            updateLivePrice(newPrice);
          }
 
          await new Promise((resolve) => setTimeout(resolve, 250));

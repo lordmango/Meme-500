@@ -10,8 +10,8 @@ const MAX_BPS = 1500;      // Max slippage
 const QUOTE_SLIPPAGE = 1500;    // Slippage when we send quote
 const SOL_AMOUNT = 100;         // 1000 = 1 Sol
 
-const TAKE_PROFIT_100 = 1.8;
-const TAKE_PROFIT_60 = 1.5;
+const TAKE_PROFIT_100 = 1.9;
+const TAKE_PROFIT_60 = 1.6;
 
 let newData = {};
 let percentageChange = 100;
@@ -20,8 +20,7 @@ let precentLimit = 0;
 export async function getCandleData(boughtPrice, defiTxn, existingData) {
    const roundedTimestamp = Math.round(defiTxn.timestamp);
    let buyExecuted = false;
-   const price = await fetchTokenPrice(defiTxn.out_token_address)
-   percentageChange = ((price - boughtPrice) / boughtPrice) * 100;
+   let secondBuyExecuted = false;
 
    let initialTakeProfit = await checkParameters(
       defiTxn.out_token_address,
@@ -32,26 +31,24 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
    );
    
    if (initialTakeProfit != 0) {
+
+      priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
       
       if (initialTakeProfit == TAKE_PROFIT_100) {
-         precentLimit = 50;
+         precentLimit = 60;
       } else {
-         precentLimit = 25;
+         precentLimit = 30;
       }
       
       try {
-         console.log("First buy start: " + Date.now())
          let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+        
+         if (txid == null) { await updatePercentageChange(defiTxn.out_token_address, boughtPrice) }
          if (txid == null && percentageChange < precentLimit) {
-            console.log("First buy retry: " + Date.now())
             txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
          }
-         if (txid) { 
-            console.log("First buy end: " + Date.now())
-            buyExecuted = true;
-            await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, initialTakeProfit);
-            console.log("First buy add token finish: " + Date.now())
-         }
+         
+         if (txid) { buyExecuted = true }
       } catch (error) {
          console.error(`[Server] Buy failed for token ${tokenId}`);
       }
@@ -72,27 +69,28 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
       );
       
       if (updatedTakeProfit !== 0 && buyExecuted == false) {
+
+         priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
       
          if (updatedTakeProfit == TAKE_PROFIT_100) {
-            precentLimit = 50;
+            precentLimit = 60;
          } else {
-            precentLimit = 25;
+            precentLimit = 30;
          }
+
+         await updatePercentageChange(defiTxn.out_token_address, boughtPrice);
 
          if (percentageChange < precentLimit) {
             
-            try {
-               console.log("Second buy start: " + Date.now())
+            try {               
                let txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
+               
+               if (txid == null) { await updatePercentageChange(defiTxn.out_token_address, boughtPrice) }
                if (txid == null && percentageChange < precentLimit) {
-                  console.log("Second buy retry: " + Date.now())
                   txid = await swapTokens(SOL_MINT_ADDRESS, defiTxn.out_token_address, SOL_AMOUNT, PRIORITY_FEE, MIN_BPS, MAX_BPS, QUOTE_SLIPPAGE);
                }
-               if (txid) { 
-                  console.log("Second buy end: " + Date.now())
-                  await priceManager.addToken(defiTxn.out_token_address, boughtPrice, defiTxn.out_amount, updatedTakeProfit);
-                  console.log("Second buy add token finish: " + Date.now())
-               }
+               
+               if (txid) { secondBuyExecuted = true }
             } catch (error) {
                console.error(`[Get Buy Candle End] Buy failed for token ${tokenId}`);
             }
@@ -100,8 +98,10 @@ export async function getCandleData(boughtPrice, defiTxn, existingData) {
          }
 
       }
-      
+
       if (buyExecuted && updatedTakeProfit !== 0) { priceManager.updateTakeProfit(defiTxn.out_token_address, updatedTakeProfit) }
+
+      if (buyExecuted == false && secondBuyExecuted == false) { priceManager.removeToken(tokenId) }
 
       newData = {
          tokenId: defiTxn.out_token_address,
@@ -213,16 +213,21 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
    }
 }
 
-async function fetchTokenPrice(token) {
-   const response = await fetch('https://api.jup.ag/price/v2?ids='+ token, {
-      method: "GET"
-   });
-   const data = await response.json()
-   return data.data[token].price;
-}
+async function updatePercentageChange(token, boughtPrice) {
+   try {
+      const response = await fetch(`https://api.jup.ag/price/v2?ids=${token}`, {
+         method: "GET"
+      });
 
-export function updateLivePrice(livePriceFromPriceManager) {
-   percentageChange = ((livePriceFromPriceManager - boughtPrice) / boughtPrice) * 100;
+      if (!response.ok) {
+         throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      percentageChange = ((data.data[token].price - boughtPrice) / boughtPrice) * 100;
+   } catch (error) {
+      console.error("Error fetching token price:", error);
+   }
 }
 
 export function setPairID(pairIDFromPriceManager) {
