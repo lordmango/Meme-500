@@ -122,14 +122,14 @@ export async function checkParameters(tokenId, timestamp, mcap, holdingBalance, 
 
    const roundedMcap = Math.round(mcap);
 
-   console.log("tokenId:", tokenId);
-   console.log("timestamp:", timestamp);
-   console.log("mcap:", roundedMcap);
-
    if (mcap < 100000) {
       console.log("Marketcap < 100K");
       return 0;
    }
+
+   console.log("tokenId:", tokenId);
+   console.log("timestamp:", timestamp);
+   console.log("mcap:", roundedMcap);
 
    try {
       // Fetch pair address from dexscreener
